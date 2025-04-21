@@ -2,6 +2,7 @@
 using Hleb.Database;
 using Hleb.Dto;
 using Microsoft.AspNetCore.SignalR;
+using Sprache;
 
 namespace Hleb.SignalR
 {
@@ -98,6 +99,7 @@ namespace Hleb.SignalR
                 var confirmResponse = new
                 {
                     status = false,
+                    isComplete = true,
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
                 await Clients.Caller.SendAsync("ReceiveConfirm", confirmResponse);
@@ -174,7 +176,14 @@ namespace Hleb.SignalR
                 TotalRemaining = totalRemaining
             };
 
-            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", send);
+            var message = new
+            {
+                message = "",
+                status = true,
+                data = send,
+            };
+
+            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+﻿ using ClosedXML.Excel;
 using DotNetEnv;
 using Hleb.Classes;
 using Hleb.Database;
@@ -334,8 +334,9 @@ namespace Hleb.Controllers
 
             await _context.SaveChangesAsync();
 
-            var send = new DeliveryInfoDto
+            var send = new
             {
+                WorkerId = workerIntId,
                 ProductName = product.Name,
                 Current = new ClientDeliveryInfo
                 {
