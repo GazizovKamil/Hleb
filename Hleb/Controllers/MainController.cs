@@ -492,6 +492,30 @@ namespace Hleb.Controllers
                 result.Add(send);
             }
 
+            if(result.Count == 0)
+            {
+                for (int workerId = 1; workerId <= 3; workerId++)
+                {
+                    result.Add(new
+                    {
+                        WorkerId = workerId,
+                        ProductName = "",
+                        Current = new ClientDeliveryInfo
+                        {
+                            ClientName = "",
+                            ClientCode = "",
+                            QuantityToShip = 0
+                        },
+                        Next = (ClientDeliveryInfo?)null,
+                        Previous = (ClientDeliveryInfo?)null,
+                        Page = 0,
+                        TotalPages = 0,
+                        TotalPlanned = 0,
+                        TotalRemaining = 0
+                    });
+                }
+            }
+
             return Ok(new
             {
                 message = "",
