@@ -46,8 +46,11 @@ namespace Hleb.SignalR
 
             if (takenByAnother != null)
             {
-                var errorResponse = new { status = false, message = $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})" };
-                await Clients.Caller.SendAsync("ReceiveError", errorResponse);
+                var errorResponse = new { status = false, message = $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
+                    isComplete = true,
+                    data = new { },
+                };
+                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
 
@@ -100,9 +103,10 @@ namespace Hleb.SignalR
                 {
                     status = false,
                     isComplete = true,
+                    data = new {},
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
-                await Clients.Caller.SendAsync("ReceiveConfirm", confirmResponse);
+                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", confirmResponse);
                 return;
             }
 
@@ -180,6 +184,7 @@ namespace Hleb.SignalR
             {
                 message = "",
                 status = true,
+                isComplete = false,
                 data = send,
             };
 
