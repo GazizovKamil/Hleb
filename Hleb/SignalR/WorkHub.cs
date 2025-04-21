@@ -266,8 +266,7 @@ namespace Hleb.SignalR
             }
 
             var remainingGrouped =  fullGrouped
-            .Skip(page)
-            .Where(g => !_context.ShipmentLogs
+            .Where(g => _context.ShipmentLogs
                 .Any(s => s.Id < shipmentLog.Id))
             .ToList();
 
