@@ -57,7 +57,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
-                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -98,7 +98,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
-                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -139,7 +139,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
-                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -223,7 +223,7 @@ namespace Hleb.SignalR
                     },
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
-                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", confirmResponse);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", confirmResponse);
                 return;
             }
