@@ -65,7 +65,7 @@ app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHub<WorkHub>("/workhub");
+    endpoints.MapHub<WorkHub>("/workhub").RequireCors("AllowAll"); ;
 
     endpoints.MapControllers();
 });
