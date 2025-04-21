@@ -238,7 +238,7 @@ namespace Hleb.SignalR
 
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalShipped = fullGrouped.Sum(g => g.Shipped);
-            var totalRemaining = fullGrouped.Sum(g => g.Remaining);
+            var totalRemaining = totalShipped - fullGrouped.Sum(g => g.Remaining);
 
             var shipmentLog = _context.ShipmentLogs
                 .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
