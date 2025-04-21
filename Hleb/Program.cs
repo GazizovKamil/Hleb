@@ -16,9 +16,15 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
         options.JsonSerializerOptions.WriteIndented = true;
-    }); 
+    })
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddSignalR()
     .AddJsonProtocol(options =>
     {
@@ -26,13 +32,9 @@ builder.Services.AddSignalR()
         options.PayloadSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
         options.PayloadSerializerOptions.WriteIndented = true;
     });
+
 builder.Services.AddDbContext<AppDbContext>();
-builder.Services
-    .AddControllers()
-    .AddJsonOptions(opts =>
-    {
-        opts.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-    });
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -42,6 +44,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
 var port = Env.GetString("PORT") ?? "3003";
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -58,6 +61,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
@@ -65,12 +69,11 @@ app.UseAuthorization();
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHub<WorkHub>("/workhub").RequireCors("AllowAll"); ;
-
     endpoints.MapControllers();
+
+    endpoints.MapHub<WorkHub>("/workhub").RequireCors("AllowAll");
 });
 
-app.MapControllers();
 app.UseStaticFiles();
 
 app.Run();
