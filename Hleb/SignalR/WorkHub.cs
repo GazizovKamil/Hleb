@@ -238,7 +238,7 @@ namespace Hleb.SignalR
 
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalShipped = fullGrouped.Sum(g => g.Shipped);
-            var totalRemaining = totalPlanned - fullGrouped
+            var totalRemaining = totalPlanned + fullGrouped
             .Skip(page) 
             .Sum(g => g.Shipped);
 
