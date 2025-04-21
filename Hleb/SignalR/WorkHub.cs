@@ -155,7 +155,7 @@ namespace Hleb.SignalR
                     var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
 
                     var shipped = g.Sum(d => _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key)
+                        .Where(s => s.ClientId == g.Key).Skip(page)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -238,10 +238,7 @@ namespace Hleb.SignalR
 
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalShipped = fullGrouped.Sum(g => g.Shipped);
-            var totalRemaining = totalPlanned + fullGrouped
-            .Skip(page) 
-            .Sum(g => g.Shipped);
-
+            var totalRemaining = fullGrouped.Sum(g => g.Remaining);
 
             var shipmentLog = _context.ShipmentLogs
                 .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
