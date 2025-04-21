@@ -151,7 +151,7 @@
 
     <script>
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/workhub")
+            .withUrl("http://77.66.184.58:81/workhub")
             .build();
 
         let activePicker = null;
@@ -169,7 +169,7 @@
             activePicker = pickerNum;
             const workerId = input.dataset.workerId;
 
-            const response = await fetch('/api/GetDeliveryInfo', {
+            const response = await fetch('http://77.66.184.58:81/api/GetDeliveryInfo', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

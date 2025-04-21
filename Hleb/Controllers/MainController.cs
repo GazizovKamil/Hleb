@@ -6,6 +6,7 @@ using Hleb.Dto;
 using Hleb.Middleware;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sprache;
 using System.Globalization;
 
 namespace Hleb.Controllers
@@ -360,7 +361,12 @@ namespace Hleb.Controllers
                 TotalRemaining = totalRemaining
             };
 
-            return Ok(send);
+            return Ok(new
+            {
+                message = "",
+                status = true,
+                data = send,
+            });
         }
 
 
@@ -485,7 +491,12 @@ namespace Hleb.Controllers
                 result.Add(send);
             }
 
-            return Ok(result);
+            return Ok(new
+            {
+                message = "",
+                status = true,
+                data = result,
+            });
         }
     }
 }
