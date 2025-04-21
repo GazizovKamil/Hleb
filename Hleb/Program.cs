@@ -1,0 +1,89 @@
+using DotNetEnv;
+using Hleb.Database;
+using Hleb.Helpers;
+using Hleb.SignalR;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Text.Json.Serialization;
+
+var builder = WebApplication.CreateBuilder(args);
+
+Env.Load();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
+        options.JsonSerializerOptions.WriteIndented = true;
+    }); 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+        options.PayloadSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
+        options.PayloadSerializerOptions.WriteIndented = true;
+    });
+builder.Services.AddDbContext<AppDbContext>();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+    });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowElectronApp", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+var port = Env.GetString("PORT") ?? "3003";
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Listen(IPAddress.Any, int.Parse(port));
+});
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<WorkHub>("/workhub");
+
+    endpoints.MapControllers();
+});
+
+
+
+
+app.UseAuthorization();
+
+app.MapControllers();
+app.UseStaticFiles();
+
+app.UseCors(builder =>
+{
+    builder.AllowAnyOrigin()
+           .AllowAnyHeader()
+           .AllowAnyMethod();
+});
+
+app.Run();

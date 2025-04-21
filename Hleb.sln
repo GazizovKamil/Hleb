@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34714.143
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hleb", "Hleb\Hleb.csproj", "{E99BA02C-5458-4B48-A60C-8454E26EFC36}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E99BA02C-5458-4B48-A60C-8454E26EFC36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E99BA02C-5458-4B48-A60C-8454E26EFC36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E99BA02C-5458-4B48-A60C-8454E26EFC36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E99BA02C-5458-4B48-A60C-8454E26EFC36}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E86771F2-49D0-4C7A-9D13-03FF7AE9231A}
+	EndGlobalSection
+EndGlobal
