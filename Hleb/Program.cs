@@ -58,6 +58,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -68,9 +69,6 @@ app.UseEndpoints(endpoints =>
 
     endpoints.MapControllers();
 });
-app.UseCors("AllowAll");
-
-app.UseAuthorization();
 
 app.MapControllers();
 app.UseStaticFiles();
