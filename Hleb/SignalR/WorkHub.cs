@@ -30,7 +30,7 @@ namespace Hleb.SignalR
                     isComplete = false,
                     data = new
                     {
-                        workerId = workerId,
+                        workerId = workerIntId,
                         productName = "",
                         current = new
                         {
@@ -70,7 +70,7 @@ namespace Hleb.SignalR
                     isComplete = false,
                     data = new
                     {
-                        workerId = workerId,
+                        workerId = workerIntId,
                         productName = "",
                         current = new
                         {
@@ -110,7 +110,7 @@ namespace Hleb.SignalR
                     isComplete = false,
                     data = new
                     {
-                        workerId = workerId,
+                        workerId = workerIntId,
                         productName = "",
                         current = new
                         {
@@ -193,7 +193,7 @@ namespace Hleb.SignalR
                     workerId = workerIntId,
                     data = new
                     {
-                        workerId = workerId,
+                        workerId = workerIntId,
                         productName = "",
                         current = new
                         {
