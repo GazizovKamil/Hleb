@@ -26,8 +26,12 @@ namespace Hleb.SignalR
 
             if (lastShipmentLog == null)
             {
-                var errorResponse = new { status = false, message = "Не найдены отгрузки для данного сборщика." };
-                await Clients.Caller.SendAsync("ReceiveError", errorResponse);
+                var errorResponse = new { status = false, message = "Не найдены отгрузки для данного сборщика.",
+                    isComplete = true,
+                    data = new { },
+                    workerId = workerIntId
+                };
+                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
 
@@ -36,8 +40,12 @@ namespace Hleb.SignalR
             var product = _context.Products.FirstOrDefault(p => p.Barcode == barcode);
             if (product == null)
             {
-                var errorResponse = new { status = false, message = "Продукт не найден" };
-                await Clients.Caller.SendAsync("ReceiveError", errorResponse);
+                var errorResponse = new { status = false, message = "Продукт не найден",
+                    isComplete = true,
+                    data = new { },
+                    workerId = workerIntId
+                };
+                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
 
@@ -49,6 +57,7 @@ namespace Hleb.SignalR
                 var errorResponse = new { status = false, message = $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
                     isComplete = true,
                     data = new { },
+                    workerId = workerIntId
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
@@ -103,6 +112,7 @@ namespace Hleb.SignalR
                 {
                     status = false,
                     isComplete = true,
+                    workerId = workerIntId,
                     data = new {},
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
@@ -184,6 +194,7 @@ namespace Hleb.SignalR
             {
                 message = "",
                 status = true,
+                workerId = workerIntId,
                 isComplete = false,
                 data = send,
             };
