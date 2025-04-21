@@ -356,30 +356,30 @@ namespace Hleb.Controllers
 
             var send = new
             {
-                WorkerId = workerIntId,
-                ProductName = product.Name,
-                Current = new ClientDeliveryInfo
+                workerId = workerIntId,
+                productName = product.Name,
+                current = new 
                 {
-                    ClientName = current.Client?.Name,
-                    ClientCode = current.Client?.ClientCode,
-                    QuantityToShip = current.Remaining
+                    clientName = current.Client?.Name,
+                    clientCode = current.Client?.ClientCode,
+                    quantityToShip = current.Remaining
                 },
-                Next = next != null ? new ClientDeliveryInfo
+                next = next != null ? new 
                 {
-                    ClientName = next.Client?.Name,
-                    ClientCode = next.Client?.ClientCode,
-                    QuantityToShip = next.Remaining
+                    clientName = next.Client?.Name,
+                    clientCode = next.Client?.ClientCode,
+                    quantityToShip = next.Remaining
                 } : null,
-                Previous = previous != null ? new ClientDeliveryInfo
+                previous = previous != null ? new 
                 {
-                    ClientName = previous.Client?.Name,
-                    ClientCode = previous.Client?.ClientCode,
-                    QuantityToShip = previous.Remaining
+                    clientName = previous.Client?.Name,
+                    clientCode = previous.Client?.ClientCode,
+                    quantityToShip = previous.Remaining
                 } : null,
-                Page = currentIndex,
-                TotalPages = grouped.Count,
-                TotalPlanned = totalPlanned,
-                TotalRemaining = totalRemaining
+                page = currentIndex,
+                totalPages = grouped.Count,
+                totalPlanned = totalPlanned,
+                totalRemaining = totalRemaining
             };
 
             return Ok(new
