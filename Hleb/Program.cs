@@ -49,7 +49,10 @@ var port = Env.GetString("PORT") ?? "3003";
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(IPAddress.Any, int.Parse(port));
+    options.Listen(IPAddress.Any, int.Parse(port), listenOptions =>
+    {
+        listenOptions.UseConnectionLogging();  // Это для логирования подключения
+    });
 });
 
 var app = builder.Build();
