@@ -210,16 +210,36 @@ namespace Hleb.Controllers
                 });
             }
 
+            var shipmentLogs = await _context.ShipmentLogs
+                .Where(s => DateOnly.FromDateTime(s.ShipmentDate) == selectedDate)
+                .ToListAsync();
+
+            var shippedDict = shipmentLogs
+                .GroupBy(s => s.DeliveryId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
+
             var pivot = deliveries
-                .GroupBy(d => d.Product.Name)
-                .Select(g => new
+            .GroupBy(d => d.Product)
+            .Select(g =>
+            {
+                var totalQty = g.Sum(d => d.Quantity);
+
+                var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
+
+                var remaining = totalQty - shipped;
+
+                return new
                 {
-                    Product = g.Key,
+                    Product = g.Key.Name,
                     Clients = g.GroupBy(x => x.Client.Name)
                                .ToDictionary(x => x.Key, x => x.Sum(d => d.Quantity)),
-                    Total = g.Sum(x => x.Quantity)
-                })
-                .ToList();
+                    Total = totalQty,
+                    Shipped = shipped,
+                    Remaining = remaining
+                };
+            })
+            .ToList();
+
 
             return Ok(new
             {
