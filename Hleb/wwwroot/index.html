@@ -102,8 +102,10 @@
     <div class="picker-panel" id="picker1">
         <div class="store-box" id="store1">??<br><span style="font-size:14px;">номер магазина</span></div>
         <div class="side-numbers">
-            <span id="prev1" onclick="navigateDelivery(1, -1)">Назад</span>
-            <span id="next1" onclick="navigateDelivery(1, 1)">Вперед</span>
+            <span id="prev1">0</span>
+            <span onclick="navigateDelivery(1, -1)">Назад</span>
+            <span id="next1">0</span>
+            <span onclick="navigateDelivery(1, 1)">Вперед</span>
         </div>
         <div class="circle red" id="circle1">?</div>
         <div class="bread-name" id="bread1">-</div>
@@ -119,8 +121,10 @@
     <div class="picker-panel" id="picker2">
         <div class="store-box" id="store2">??<br><span style="font-size:14px;">номер магазина</span></div>
         <div class="side-numbers">
-            <span id="prev2" onclick="navigateDelivery(2, -1)">Назад</span>
-            <span id="next2" onclick="navigateDelivery(2, 1)">Вперед</span>
+            <span id="prev2" >0</span>
+            <span  onclick="navigateDelivery(2, -1)">Назад</span>
+            <span id="next2">0</span>
+            <span  onclick="navigateDelivery(2, 1)">Вперед</span>
         </div>
         <div class="circle green" id="circle2">?</div>
         <div class="bread-name" id="bread2">-</div>
@@ -136,8 +140,10 @@
     <div class="picker-panel" id="picker3">
         <div class="store-box" id="store3">??<br><span style="font-size:14px;">номер магазина</span></div>
         <div class="side-numbers">
-            <span id="prev3" onclick="navigateDelivery(3, -1)">Назад</span>
-            <span id="next3" onclick="navigateDelivery(3, 1)">Вперед</span>
+            <span id="prev3">0</span>
+            <span onclick="navigateDelivery(3, -1)">Назад</span>
+            <span id="next3">0</span>
+            <span onclick="navigateDelivery(3, 1)">Вперед</span>
         </div>
         <div class="circle purple" id="circle3">?</div>
         <div class="bread-name" id="bread3">-</div>
@@ -151,7 +157,7 @@
 
     <script>
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("http://77.66.184.58:81/workhub")
+            .withUrl("/workhub")
             .build();
 
         let activePicker = null;
@@ -169,7 +175,7 @@
             activePicker = pickerNum;
             const workerId = input.dataset.workerId;
 
-            const response = await fetch('http://77.66.184.58:81/api/GetDeliveryInfo', {
+            const response = await fetch('/api/GetDeliveryInfo', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -221,6 +227,22 @@
             console.log(error)
 
             if (!error.status) {
+                if (error.isDelivered == true) {
+                    const response = await fetch('/api/GetCurrentAssignments');
+                    const assignments = await response.json();
+
+                    for (let i = 0; i < assignments.length; i++) {
+                        const pickerNum = i + 1;
+                        const assignment = assignments[i];
+                        const dto = assignment;
+
+                        if (!dto || !dto.Current) continue;
+
+                        document.getElementById(`barcode${pickerNum}`).value = dto.Current.ClientCode;
+                        pickerData[pickerNum].currentPage = 0;
+                        updatePickerInfo(pickerNum, dto);
+                    }
+                }
                 pickerData[pickerNum].currentPage = Math.max(0, pickerData[pickerNum].currentPage - 1);
                 alert(`Ошибка: ${error.message}`);
             }
