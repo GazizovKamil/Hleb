@@ -25,13 +25,13 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSignalR()
-    .AddJsonProtocol(options =>
-    {
-        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
-        options.PayloadSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
-        options.PayloadSerializerOptions.WriteIndented = true;
-    });
+//builder.Services.AddSignalR()
+//    .AddJsonProtocol(options =>
+//    {
+//        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+//        options.PayloadSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
+//        options.PayloadSerializerOptions.WriteIndented = true;
+//    });
 
 builder.Services.AddDbContext<AppDbContext>();
 
