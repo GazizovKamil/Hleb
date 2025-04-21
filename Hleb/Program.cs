@@ -35,13 +35,11 @@ builder.Services
     });
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowElectronApp", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy
-            .WithOrigins("http://localhost")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 var port = Env.GetString("PORT") ?? "3003";
@@ -70,20 +68,11 @@ app.UseEndpoints(endpoints =>
 
     endpoints.MapControllers();
 });
-
-
-
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
 app.MapControllers();
 app.UseStaticFiles();
-
-app.UseCors(builder =>
-{
-    builder.AllowAnyOrigin()
-           .AllowAnyHeader()
-           .AllowAnyMethod();
-});
 
 app.Run();
