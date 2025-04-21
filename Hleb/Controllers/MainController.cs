@@ -493,15 +493,17 @@ namespace Hleb.Controllers
                 result.Add(send);
             }
 
-            if(result.Count == 0)
+            var existingWorkerIds = result.Select(r => (int)r.workerId).ToHashSet();
+
+            for (int workerId = 1; workerId <= 3; workerId++)
             {
-                for (int workerId = 1; workerId <= 3; workerId++)
+                if (!existingWorkerIds.Contains(workerId))
                 {
                     result.Add(new
                     {
                         workerId = workerId,
                         productName = "",
-                        current = new 
+                        current = new
                         {
                             clientName = "",
                             clientCode = "",
@@ -526,6 +528,7 @@ namespace Hleb.Controllers
                     });
                 }
             }
+
 
             return Ok(new
             {
