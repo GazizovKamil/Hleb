@@ -265,13 +265,13 @@ namespace Hleb.SignalR
                 _context.ShipmentLogs.Add(shipmentLog);
             }
 
-            var remainingGrouped = fullGrouped
+            var remainingGrouped = totalShipped - fullGrouped
             .Skip(page)
             .Where(g => !_context.ShipmentLogs
                 .Any(s => s.Id < shipmentLog.Id))
             .ToList();
 
-            var totalRemaining = remainingGrouped.Sum(g => g.Remaining);
+            var totalRemaining = remainingGrouped.Sum(g => g.Shipped);
 
             await _context.SaveChangesAsync();
 
