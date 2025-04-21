@@ -4,295 +4,114 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Сборщики хлеба</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.13/signalr.min.js"></script>
     <style>
         body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
+            font-family: Arial, sans-serif;
         }
 
-        .picker-panel {
-            border: 2px solid black;
-            padding: 10px;
-            width: 250px;
-            text-align: center;
-        }
-
-        .store-box {
-            border: 2px solid black;
-            margin-bottom: 10px;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .circle {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            margin: 10px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .red {
-            background-color: #e74c3c;
-        }
-
-        .green {
-            background-color: #2ecc71;
-        }
-
-        .purple {
-            background-color: #8e44ad;
-        }
-
-        .side-numbers {
-            display: flex;
-            justify-content: space-between;
-            font-size: 22px;
-            color: gray;
-            padding: 0 10px;
-        }
-
-        .bread-name {
-            font-weight: bold;
-            font-size: 18px;
-            margin: 10px 0;
-        }
-
-        .qty {
-            font-size: 22px;
-            font-weight: bold;
-        }
-
-        .sub {
-            color: gray;
-            font-size: 14px;
-        }
-
-        .input-section {
-            margin-top: 20px;
-        }
-
-        input[type="text"] {
+        .container {
             width: 80%;
-            padding: 5px;
-            font-size: 16px;
+            margin: 0 auto;
         }
 
-        button {
-            margin-top: 5px;
-            padding: 5px 10px;
+        .delivery-info {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
         }
 
-        #prev1, #next1, #prev2, #next2, #prev3, #next3 {
+            .delivery-info h3 {
+                margin-top: 0;
+            }
+
+        .btn {
+            padding: 10px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
             cursor: pointer;
         }
+
+            .btn:hover {
+                background-color: #0056b3;
+            }
     </style>
 </head>
 <body>
 
-    <div class="picker-panel" id="picker1">
-        <div class="store-box" id="store1">??<br><span style="font-size:14px;">номер магазина</span></div>
-        <div class="side-numbers">
-            <span id="prev1">0</span>
-            <span onclick="navigateDelivery(1, -1)">Назад</span>
-            <span id="next1">0</span>
-            <span onclick="navigateDelivery(1, 1)">Вперед</span>
-        </div>
-        <div class="circle red" id="circle1">?</div>
-        <div class="bread-name" id="bread1">-</div>
-        <div class="qty" id="qty1">-</div>
-        <div class="sub">Осталось/Весь</div>
-        <div class="input-section">
-            <input type="text" placeholder="Штрихкод" id="barcode1" data-worker-id="1" />
-            <button onclick="sendBarcode(1)">Скан</button>
-        </div>
-    </div>
+    <div class="container">
+        <h2>Информация о доставке</h2>
 
-    <!-- Сборщик 2 -->
-    <div class="picker-panel" id="picker2">
-        <div class="store-box" id="store2">??<br><span style="font-size:14px;">номер магазина</span></div>
-        <div class="side-numbers">
-            <span id="prev2" >0</span>
-            <span  onclick="navigateDelivery(2, -1)">Назад</span>
-            <span id="next2">0</span>
-            <span  onclick="navigateDelivery(2, 1)">Вперед</span>
+        <div id="deliveryInfo" class="delivery-info">
+            <h3>Загрузка...</h3>
         </div>
-        <div class="circle green" id="circle2">?</div>
-        <div class="bread-name" id="bread2">-</div>
-        <div class="qty" id="qty2">-</div>
-        <div class="sub">Осталось/Весь</div>
-        <div class="input-section">
-            <input type="text" placeholder="Штрихкод" id="barcode2" data-worker-id="2" />
-            <button onclick="sendBarcode(2)">Скан</button>
-        </div>
-    </div>
 
-    <!-- Сборщик 3 -->
-    <div class="picker-panel" id="picker3">
-        <div class="store-box" id="store3">??<br><span style="font-size:14px;">номер магазина</span></div>
-        <div class="side-numbers">
-            <span id="prev3">0</span>
-            <span onclick="navigateDelivery(3, -1)">Назад</span>
-            <span id="next3">0</span>
-            <span onclick="navigateDelivery(3, 1)">Вперед</span>
-        </div>
-        <div class="circle purple" id="circle3">?</div>
-        <div class="bread-name" id="bread3">-</div>
-        <div class="qty" id="qty3">-</div>
-        <div class="sub">Осталось/Весь</div>
-        <div class="input-section">
-            <input type="text" placeholder="Штрихкод" id="barcode3" data-worker-id="3" />
-            <button onclick="sendBarcode(3)">Скан</button>
-        </div>
+        <button id="nextPageBtn" class="btn">Следующая страница</button>
+        <button id="previousPageBtn" class="btn">Предыдущая страница</button>
     </div>
 
     <script>
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/workhub")
+            .withUrl("http://77.66.184.58:81/workHub")
             .build();
 
-        let activePicker = null;
-        let pickerData = {
-            1: { currentPage: 0 },
-            2: { currentPage: 0 },
-            3: { currentPage: 0 }
-        };
+        // Инициализация переменных
+        let workerId = 1; // Пример workerId
+        let currentPage = 0;
 
-        async function sendBarcode(pickerNum) {
-            const input = document.getElementById(`barcode${pickerNum}`);
-            const barcode = input.value.trim();
-            if (!barcode) return;
+        // Функция для обновления информации о доставке
+        function updateDeliveryInfo(data) {
+            const deliveryInfoDiv = document.getElementById("deliveryInfo");
 
-            activePicker = pickerNum;
-            const workerId = input.dataset.workerId;
+            if (data.status) {
+                const deliveryData = data.data;
+                const current = deliveryData.current;
+                const next = deliveryData.next;
+                const previous = deliveryData.previous;
 
-            const response = await fetch('/api/GetDeliveryInfo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    barcode: barcode,
-                    workerId: workerId,
-                    currentPage: pickerData[pickerNum].currentPage
-                })
-            });
-
-            const data = await response.json();
-            console.log(data)
-            if (response.ok) {
-                pickerData[pickerNum].currentPage = data.Page;
-
-                updatePickerInfo(pickerNum, data);
+                deliveryInfoDiv.innerHTML = `
+                    <h3>Продукт: ${data.data.productName}</h3>
+                    <p><strong>Текущий клиент:</strong> ${current.clientName} (Код клиента: ${current.clientCode})</p>
+                    <p><strong>Количество к отгрузке:</strong> ${current.quantityToShip}</p>
+                    <p><strong>Следующий клиент:</strong> ${next ? next.clientName : 'Нет следующего клиента'}</p>
+                    <p><strong>Предыдущий клиент:</strong> ${previous ? previous.clientName : 'Нет предыдущего клиента'}</p>
+                    <p><strong>Страница:</strong> ${deliveryData.page + 1} из ${deliveryData.totalPages}</p>
+                    <p><strong>Общее количество:</strong> ${deliveryData.totalPlanned}</p>
+                    <p><strong>Осталось к отгрузке:</strong> ${deliveryData.totalRemaining}</p>
+                `;
             } else {
-                alert(`Ошибка: ${data}`);
-                // Возврат страницы назад
-                pickerData[pickerNum].currentPage = Math.max(0, pickerData[pickerNum].currentPage - 1);
-                updatePickerInfo(pickerNum, data);
+                deliveryInfoDiv.innerHTML = `<p>${data.message}</p>`;
             }
         }
 
-        function updatePickerInfo(pickerNum, dto) {
-            if (dto) {
-                console.log(dto)
+        // Обработчик для получения данных из SignalR
+        connection.on("ReceiveDeliveryInfo", function (message) {
+            console.log(message)
+            updateDeliveryInfo(message);
+        });
 
-                document.getElementById(`bread${pickerNum}`).textContent = dto.ProductName;
-                document.getElementById(`circle${pickerNum}`).textContent = dto.Current.QuantityToShip;
-                document.getElementById(`qty${pickerNum}`).textContent = `${dto.TotalRemaining}/${dto.TotalPlanned}`;
-                document.getElementById(`store${pickerNum}`).textContent = dto.Current.ClientCode + "\nномер магазина";
-                document.getElementById(`prev${pickerNum}`).textContent = dto.Previous?.QuantityToShip ?? 0;
-                document.getElementById(`next${pickerNum}`).textContent = dto.Next?.QuantityToShip ?? 0;
-            }
-        }
+        // Функции для навигации по страницам
+        document.getElementById("nextPageBtn").addEventListener("click", function () {
+            currentPage++;
+            connection.invoke("BackNext", workerId, currentPage).catch(err => console.error(err.toString()));
+        });
 
-        connection.on("ReceiveError", (error) => {
-            console.log(error)
-
-            if (!error.status) {
-                pickerData[pickerNum].currentPage = Math.max(0, pickerData[pickerNum].currentPage - 1);
-                alert(`Ошибка: ${error.message}`);
+        document.getElementById("previousPageBtn").addEventListener("click", function () {
+            if (currentPage > 0) {
+                currentPage--;
+                connection.invoke("BackNext", workerId, currentPage).catch(err => console.error(err.toString()));
             }
         });
 
-        connection.on("ReceiveConfirm", async (error) => {
-            console.log(error);
-
-            if (!error.status) {
-                if (error.isDelivered === true) {
-                    try {
-                        const response = await fetch('/api/GetCurrentAssignments');
-                        const assignments = await response.json();
-
-                        for (let i = 0; i < assignments.length; i++) {
-                            const pickerNum = i + 1;
-                            const assignment = assignments[i];
-                            const dto = assignment;
-
-                            if (!dto || !dto.Current) continue;
-
-                            document.getElementById(`barcode${pickerNum}`).value = dto.Current.ClientCode;
-                            pickerData[pickerNum].currentPage = 0;
-                            updatePickerInfo(pickerNum, dto);
-                        }
-                    } catch (error) {
-                        console.error('Ошибка при получении текущих заданий:', error);
-                    }
-                }
-                alert(`Ошибка: ${error.message}`);
-            }
+        // Подключаемся к серверу
+        connection.start().then(function () {
+            //connection.invoke("BackNext", workerId, currentPage).catch(err => console.error(err.toString()));
+        }).catch(function (err) {
+            return console.error(err.toString());
         });
-
-
-        connection.start().catch(err => console.error(err));
-
-        connection.on("ReceiveDeliveryInfo", (dto) => {
-            if (!activePicker) return;
-            console.log(dto)
-
-            updatePickerInfo(activePicker, dto);
-        });
-
-        function navigateDelivery(pickerNum, direction) {
-            pickerData[pickerNum].currentPage += direction;
-
-            const workerId = document.getElementById(`barcode${pickerNum}`).dataset.workerId;
-
-            connection.invoke("BackNext", workerId, pickerData[pickerNum].currentPage)
-                .catch(err => console.error(err));
-
-            activePicker = pickerNum;
-        }
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const response = await fetch('/api/GetCurrentAssignments');
-                const assignments = await response.json();
-
-                for (let i = 0; i < assignments.length; i++) {
-                    const pickerNum = i + 1;
-                    const assignment = assignments[i];
-                    const dto = assignment;
-
-                    if (!dto || !dto.Current) continue;
-
-                    document.getElementById(`barcode${pickerNum}`).value = dto.Current.ClientCode;
-                    pickerData[pickerNum].currentPage = 0;
-                    updatePickerInfo(pickerNum, dto);
-                }
-            } catch (error) {
-                console.error('Ошибка при загрузке текущих заданий:', error);
-            }
-        });
-
     </script>
 
 </body>

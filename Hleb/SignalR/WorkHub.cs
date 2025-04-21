@@ -57,6 +57,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -97,6 +98,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -137,6 +139,7 @@ namespace Hleb.SignalR
                     },
                     workerId = workerIntId
                 };
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
                 return;
             }
@@ -167,7 +170,7 @@ namespace Hleb.SignalR
                         Client = client,
                         TotalQuantity = totalQty,
                         Shipped = shipped,
-                        Remaining = remaining
+                        Remaining = remaining,
                     };
                 })
                 .OrderBy(g => g.ClientId)
@@ -220,6 +223,7 @@ namespace Hleb.SignalR
                     },
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
+                await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", confirmResponse);
                 return;
             }
@@ -286,7 +290,7 @@ namespace Hleb.SignalR
                 {
                     clientName = previous.Client?.Name,
                     clientCode = previous.Client?.ClientCode,
-                    quantityToShip = previous.Shipped
+                    quantityToShip = previous.Remaining
                 } : null,
                 page = page,
                 totalPages = totalPages,
@@ -303,7 +307,8 @@ namespace Hleb.SignalR
                 data = send,
             };
 
-            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
+            //await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
+            await Clients.All.SendAsync("ReceiveDeliveryInfo", message);
         }
     }
 }
