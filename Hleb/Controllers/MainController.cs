@@ -463,30 +463,30 @@ namespace Hleb.Controllers
 
                 var send = new 
                 {
-                    WorkerId = workerId,
-                    ProductName = product.Name,
-                    Current = new ClientDeliveryInfo
+                    workerId = workerId,
+                    productName = product.Name,
+                    current = new 
                     {
-                        ClientName = current.Client?.Name,
-                        ClientCode = current.Client?.ClientCode,
-                        QuantityToShip = current.Remaining
+                        clientName = current.Client?.Name,
+                        clientCode = current.Client?.ClientCode,
+                        quantityToShip = current.Remaining
                     },
-                    Next = next != null ? new ClientDeliveryInfo
+                    next = next != null ? new 
                     {
-                        ClientName = next.Client?.Name,
-                        ClientCode = next.Client?.ClientCode,
-                        QuantityToShip = next.Remaining
+                        clientName = next.Client?.Name,
+                        clientCode = next.Client?.ClientCode,
+                        quantityToShip = next.Remaining
                     } : null,
-                    Previous = previous != null ? new ClientDeliveryInfo
+                    previous = previous != null ? new
                     {
-                        ClientName = previous.Client?.Name,
-                        ClientCode = previous.Client?.ClientCode,
-                        QuantityToShip = previous.Remaining
+                        clientName = previous.Client?.Name,
+                        clientCode = previous.Client?.ClientCode,
+                        quantityToShip = previous.Remaining
                     } : null,
-                    Page = currentIndex,
-                    TotalPages = grouped.Count,
-                    TotalPlanned = totalPlanned,
-                    TotalRemaining = totalRemaining
+                    page = currentIndex,
+                    totalPages = grouped.Count,
+                    totalPlanned = totalPlanned,
+                    totalRemaining = totalRemaining
                 };
 
                 result.Add(send);
@@ -498,20 +498,30 @@ namespace Hleb.Controllers
                 {
                     result.Add(new
                     {
-                        WorkerId = workerId,
-                        ProductName = "",
-                        Current = new ClientDeliveryInfo
+                        workerId = workerId,
+                        productName = "",
+                        current = new 
                         {
-                            ClientName = "",
-                            ClientCode = "",
-                            QuantityToShip = 0
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
                         },
-                        Next = (ClientDeliveryInfo?)null,
-                        Previous = (ClientDeliveryInfo?)null,
-                        Page = 0,
-                        TotalPages = 0,
-                        TotalPlanned = 0,
-                        TotalRemaining = 0
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
                     });
                 }
             }
