@@ -295,7 +295,7 @@ namespace Hleb.Controllers
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
                     var totalQty = g.Sum(d => d.Quantity);
-                    var remaining = totalQty - shipped;
+                    var remaining = Math.Max(0, totalQty - shipped);
 
                     return new
                     {
