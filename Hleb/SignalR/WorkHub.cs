@@ -27,8 +27,34 @@ namespace Hleb.SignalR
             if (lastShipmentLog == null)
             {
                 var errorResponse = new { status = false, message = "Не найдены отгрузки для данного сборщика.",
-                    isComplete = true,
-                    data = new { },
+                    isComplete = false,
+                    data = new
+                    {
+                        workerId = workerId,
+                        productName = "",
+                        current = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
+                    },
                     workerId = workerIntId
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
@@ -41,8 +67,34 @@ namespace Hleb.SignalR
             if (product == null)
             {
                 var errorResponse = new { status = false, message = "Продукт не найден",
-                    isComplete = true,
-                    data = new { },
+                    isComplete = false,
+                    data = new
+                    {
+                        workerId = workerId,
+                        productName = "",
+                        current = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
+                    },
                     workerId = workerIntId
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
@@ -55,8 +107,34 @@ namespace Hleb.SignalR
             if (takenByAnother != null)
             {
                 var errorResponse = new { status = false, message = $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
-                    isComplete = true,
-                    data = new { },
+                    isComplete = false,
+                    data = new
+                    {
+                        workerId = workerId,
+                        productName = "",
+                        current = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
+                    },
                     workerId = workerIntId
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
@@ -113,7 +191,33 @@ namespace Hleb.SignalR
                     status = false,
                     isComplete = true,
                     workerId = workerIntId,
-                    data = new {},
+                    data = new
+                    {
+                        workerId = workerId,
+                        productName = "",
+                        current = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
+                    },
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", confirmResponse);
