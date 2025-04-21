@@ -447,25 +447,6 @@ namespace Hleb.Controllers
                 grouped = grouped.ToList();
                 var totalRemaining = grouped.Sum(g => g.Remaining);
 
-                if (totalRemaining == 0)
-                {
-                    result.Add(new DeliveryInfoDto
-                    {
-                        ProductName = "",
-                        Current = new ClientDeliveryInfo
-                        {
-                            ClientName = "",
-                            ClientCode = "",
-                            QuantityToShip = 0
-                        },
-                        Page = 0,
-                        TotalPages = 0,
-                        TotalPlanned = 0,
-                        TotalRemaining = 0
-                    });
-                    continue;
-                }
-
                 var currentClientId = log.ClientId;
                 var currentIndex = grouped.FindIndex(g => g.ClientId == currentClientId);
 
