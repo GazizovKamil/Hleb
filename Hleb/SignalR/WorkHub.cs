@@ -267,6 +267,22 @@ namespace Hleb.SignalR
 
             await _context.SaveChangesAsync();
 
+            // Узнаем — отгрузка уже была или произошла только что
+            bool justShippedNow = shipmentLog.Barcode == barcode && shipmentLog.ShipmentDate == DateTime.Now && shipmentLog.WorkerId == workerIntId;
+
+            int adjustedTotalRemaining;
+
+            if (justShippedNow)
+            {
+                // Значит отгрузка только что добавлена — вычитаем из totalRemaining
+                adjustedTotalRemaining = totalRemaining - current.TotalQuantity;
+            }
+            else
+            {
+                // Значит это повторный просмотр уже отгруженного — оставляем totalRemaining без изменений
+                adjustedTotalRemaining = totalRemaining + current.TotalQuantity;
+            }
+
             var send = new 
             {
                 workerId = workerIntId,
@@ -292,7 +308,7 @@ namespace Hleb.SignalR
                 page = page,
                 totalPages = totalPages,
                 totalPlanned = totalPlanned,
-                totalRemaining = totalRemaining
+                totalRemaining = adjustedTotalRemaining
             };
 
             var message = new
