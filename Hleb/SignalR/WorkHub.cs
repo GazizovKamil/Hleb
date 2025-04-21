@@ -183,7 +183,7 @@ namespace Hleb.SignalR
                 data = send,
             };
 
-            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
+            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", send);
         }
     }
 }
