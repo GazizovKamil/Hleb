@@ -274,6 +274,19 @@ namespace Hleb.Controllers
 
             var workerIntId = dto.workerId;
 
+            var unfinished = _context.ShipmentLogs
+                .Where(s => s.WorkerId == workerIntId && s.Remaining > 0 && s.Barcode != dto.barcode)
+                .FirstOrDefault();
+
+            if (unfinished != null)
+            {
+                return Ok(new
+                {
+                    message = $"Невозможно отсканировать новый товар. Завершите отгрузку предыдущего продукта (штрихкод: {unfinished.Barcode}, клиент: {unfinished.ClientId})",
+                    status = false,
+                });
+            }
+
             var takenByAnother = _context.ShipmentLogs
                 .FirstOrDefault(s => s.Barcode == dto.barcode && s.WorkerId != workerIntId);
 
