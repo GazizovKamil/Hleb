@@ -442,7 +442,8 @@ namespace Hleb.Controllers
 
                     var totalQty = g.Sum(d => d.Quantity);
                     var remaining = Math.Max(0, totalQty - shipped);
-
+                    if (remaining <= 0)
+                        continue;
                     grouped.Add(new
                     {
                         ClientId = g.Key,
