@@ -6,9 +6,6 @@ namespace Hleb.Dto
 {
     public class BuildMap
     {
-        [JsonPropertyName("date")]
-        [DataType(DataType.Date)]
-        [JsonConverter(typeof(DateOnlyJsonConverter))]
         public DateTime date { get; set; }
     }
 
