@@ -290,10 +290,9 @@ namespace Hleb.SignalR
                     quantityToShip = previous.Shipped
                 } : null,
                 page = page,
-                currentPage = page,
                 totalPages = totalPages,
                 totalPlanned = totalPlanned,
-                totalRemaining = totalRemaining  - current.TotalQuantity
+                totalRemaining = totalRemaining - current.TotalQuantity
             };
 
             var message = new

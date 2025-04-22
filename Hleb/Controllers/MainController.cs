@@ -379,7 +379,7 @@ namespace Hleb.Controllers
                 page = currentIndex,
                 totalPages = grouped.Count,
                 totalPlanned = totalPlanned,
-                totalRemaining = totalRemaining
+                totalRemaining = totalRemaining - current.TotalQuantity
             };
 
             return Ok(new
