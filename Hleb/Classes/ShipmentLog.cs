@@ -21,6 +21,7 @@ namespace Hleb.Classes
         public DateTime ShipmentDate { get; set; } = DateTime.Now;
 
         public string Notes { get; set; }
+        public int Remaining { get; set; }
 
         public int WorkerId { get; set; } // Добавлено поле идентификатора сборщика
         public int ClientId { get; set; } // Добавлено поле идентификатора сборщика

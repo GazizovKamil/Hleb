@@ -286,10 +286,8 @@ namespace Hleb.Controllers
                 });
             }
 
-            var today = DateTime.Today;
-
             var deliveries = _context.Deliveries
-                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today)
+                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == dto.date.Date)
                 .OrderBy(d => d.ClientId)
                 .ToList();
 
@@ -400,13 +398,13 @@ namespace Hleb.Controllers
         }
 
 
-        [HttpGet("GetCurrentAssignments")]
-        public async Task<IActionResult> GetCurrentAssignments()
+        [HttpPost("GetCurrentAssignments")]
+        public async Task<IActionResult> GetCurrentAssignments([FromBody] BuildMap dto)
         {
-            var today = DateTime.Today;
+            var today = dto.date == default ? DateOnly.FromDateTime(DateTime.Now) : dto.date;
 
             var latestLogs = await _context.ShipmentLogs
-                .Where(s => s.ShipmentDate.Date == today)
+                .Where(s => DateOnly.FromDateTime(s.ShipmentDate.Date) == today)
                 .GroupBy(s => s.WorkerId)
                 .Select(g => g.OrderByDescending(x => x.ShipmentDate).FirstOrDefault())
                 .ToListAsync();
@@ -423,7 +421,7 @@ namespace Hleb.Controllers
                     continue;
 
                 var deliveries = await _context.Deliveries
-                    .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today)
+                    .Where(d => d.ProductId == product.Id && DateOnly.FromDateTime(d.CreateDate.Date)  == today)
                     .OrderBy(d => d.ClientId)
                     .ToListAsync();
 

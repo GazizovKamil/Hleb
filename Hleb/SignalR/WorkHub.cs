@@ -239,13 +239,13 @@ namespace Hleb.SignalR
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalShipped = fullGrouped.Sum(g => g.Shipped);
             var totalRemaining = fullGrouped.Sum(g => g.Remaining);
+            totalRemaining -= current.TotalQuantity;
 
             var shipmentLog = _context.ShipmentLogs
                 .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
 
             if (shipmentLog != null)
             {
-                //shipmentLog.QuantityShipped = current.Remaining;
                 shipmentLog.ShipmentDate = DateTime.Now;
             }
             else
@@ -257,6 +257,7 @@ namespace Hleb.SignalR
                     ClientId = current.ClientId,
                     QuantityShipped = current.TotalQuantity,
                     ShipmentDate = DateTime.Now,
+                    Remaining = totalRemaining,
                     Notes = "Товар сканирован и отгружен",
                     DeliveryId = deliveries.FirstOrDefault().Id
                 };
@@ -292,7 +293,7 @@ namespace Hleb.SignalR
                 page = page,
                 totalPages = totalPages,
                 totalPlanned = totalPlanned,
-                totalRemaining = totalRemaining - current.TotalQuantity
+                totalRemaining = shipmentLog.Remaining
             };
 
             var message = new
