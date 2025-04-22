@@ -442,8 +442,7 @@ namespace Hleb.Controllers
 
                     var totalQty = g.Sum(d => d.Quantity);
                     var remaining = Math.Max(0, totalQty - shipped);
-                    if (remaining <= 0)
-                        continue;
+
                     grouped.Add(new
                     {
                         ClientId = g.Key,
@@ -456,6 +455,49 @@ namespace Hleb.Controllers
 
                 grouped = grouped.ToList();
                 var totalRemaining = grouped.Sum(g => g.Remaining);
+
+                var allClientIds = grouped.Select(g => g.ClientId).ToList();
+
+                var shippedClientIds = _context.ShipmentLogs
+                    .Where(s => allClientIds.Contains(s.ClientId) && s.ShipmentDate.Date == today && s.Barcode == barcode)
+                    .Select(s => s.ClientId)
+                    .Distinct()
+                    .ToList();
+
+                var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
+
+                if (allClientsShipped)
+                {
+                    var confirmResponse = new
+                    {
+                        workerId = workerId,
+                        productName = "",
+                        current = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        next = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        previous = new
+                        {
+                            clientName = "",
+                            clientCode = "",
+                            quantityToShip = 0
+                        },
+                        page = 0,
+                        totalPages = 0,
+                        totalPlanned = 0,
+                        totalRemaining = 0
+                    };
+                    result.Add(confirmResponse);
+                    continue;
+                }
 
                 var currentClientId = log.ClientId;
                 var currentIndex = grouped.FindIndex(g => g.ClientId == currentClientId);
@@ -472,6 +514,11 @@ namespace Hleb.Controllers
                 var totalPlanned = grouped.Sum(g => g.TotalQuantity);
                 var totalShipped = grouped.Sum(g => g.Shipped);
                 totalRemaining -= current.TotalQuantity;
+
+                int clientId = current.ClientId;
+
+                var shipmentLog = _context.ShipmentLogs
+                .FirstOrDefault(s => s.WorkerId == workerId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == clientId);
 
                 var send = new 
                 {
@@ -498,7 +545,7 @@ namespace Hleb.Controllers
                     page = currentIndex,
                     totalPages = grouped.Count,
                     totalPlanned = totalPlanned,
-                    totalRemaining = totalRemaining
+                    totalRemaining = shipmentLog.Remaining
                 };
 
                 result.Add(send);
