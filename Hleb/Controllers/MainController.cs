@@ -228,6 +228,7 @@ namespace Hleb.Controllers
 
                  var clients = g
                      .GroupBy(d => d.Client.Id)
+                     .OrderBy(cg => cg.Key)
                      .Select(cg => new
                      {
                          ClientId = cg.Key,
