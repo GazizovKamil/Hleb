@@ -267,29 +267,30 @@ namespace Hleb.SignalR
 
             await _context.SaveChangesAsync();
 
-            var send = new 
+            var send = new
             {
                 workerId = workerIntId,
                 productName = product.Name,
-                current = new 
+                current = new
                 {
                     clientName = current.Client?.Name,
                     clientCode = current.Client?.ClientCode,
                     quantityToShip = current.TotalQuantity,
                 },
-                next = next != null ? new 
+                next = next != null ? new
                 {
                     clientName = next.Client?.Name,
                     clientCode = next.Client?.ClientCode,
                     quantityToShip = next.TotalQuantity
                 } : null,
-                previous = previous != null ? new 
+                previous = previous != null ? new
                 {
                     clientName = previous.Client?.Name,
                     clientCode = previous.Client?.ClientCode,
                     quantityToShip = previous.Shipped
                 } : null,
                 page = page,
+                currentPage = page,
                 totalPages = totalPages,
                 totalPlanned = totalPlanned,
                 totalRemaining = totalRemaining  - current.TotalQuantity
