@@ -191,12 +191,12 @@ namespace Hleb.Controllers
         //[CheckSession]
         public async Task<IActionResult> BuildMap([FromBody] BuildMap dto)
         {
-            var selectedDate = dto.date == default ? DateOnly.FromDateTime(DateTime.Now) : dto.date;
+            var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
 
             var deliveries = await _context.Deliveries
                 .Include(d => d.Client)
                 .Include(d => d.Product)
-                .Where(d => DateOnly.FromDateTime(d.CreateDate) == selectedDate)
+                .Where(d => d.CreateDate.Date == selectedDate)
                 .ToListAsync();
 
             if (deliveries.Count == 0)
@@ -211,7 +211,7 @@ namespace Hleb.Controllers
             }
 
             var shipmentLogs = await _context.ShipmentLogs
-                .Where(s => DateOnly.FromDateTime(s.ShipmentDate) == selectedDate)
+                .Where(s => s.ShipmentDate.Date == selectedDate)
                 .ToListAsync();
 
             var shippedDict = shipmentLogs
@@ -403,10 +403,10 @@ namespace Hleb.Controllers
         [HttpPost("GetCurrentAssignments")]
         public async Task<IActionResult> GetCurrentAssignments([FromBody] BuildMap dto)
         {
-            var today = dto.date == default ? DateOnly.FromDateTime(DateTime.Now) : dto.date;
+            var today = dto.date.Date == default ? DateTime.Now : dto.date.Date; ;
 
             var latestLogs = await _context.ShipmentLogs
-                .Where(s => DateOnly.FromDateTime(s.ShipmentDate.Date) == today)
+                .Where(s => s.ShipmentDate.Date == today)
                 .GroupBy(s => s.WorkerId)
                 .Select(g => g.OrderByDescending(x => x.ShipmentDate).FirstOrDefault())
                 .ToListAsync();
@@ -423,7 +423,7 @@ namespace Hleb.Controllers
                     continue;
 
                 var deliveries = await _context.Deliveries
-                    .Where(d => d.ProductId == product.Id && DateOnly.FromDateTime(d.CreateDate.Date)  == today)
+                    .Where(d => d.ProductId == product.Id && d.CreateDate.Date  == today)
                     .OrderBy(d => d.ClientId)
                     .ToListAsync();
 

@@ -9,7 +9,7 @@ namespace Hleb.Dto
         [JsonPropertyName("date")]
         [DataType(DataType.Date)]
         [JsonConverter(typeof(DateOnlyJsonConverter))]
-        public DateOnly date { get; set; }
+        public DateTime date { get; set; }
     }
 
     public class ImportExcel
