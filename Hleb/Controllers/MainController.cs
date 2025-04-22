@@ -219,26 +219,35 @@ namespace Hleb.Controllers
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
             var pivot = deliveries
-            .GroupBy(d => d.Product)
-            .Select(g =>
-            {
-                var totalQty = g.Sum(d => d.Quantity);
+             .GroupBy(d => d.Product)
+             .Select(g =>
+             {
+                 var totalQty = g.Sum(d => d.Quantity);
+                 var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
+                 var remaining = totalQty - shipped;
 
-                var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
+                 var clients = g
+                     .GroupBy(d => d.Client.Id)
+                     .Select(cg => new
+                     {
+                         ClientId = cg.Key,
+                         Name = cg.First().Client.Name,
+                         Code = cg.First().Client.ClientCode,
+                         Quantity = cg.Sum(x => x.Quantity)
+                     })
+                     .ToList();
 
-                var remaining = totalQty - shipped;
+                 return new
+                 {
+                     Product = g.Key.Name,
+                     Clients = clients,
+                     Total = totalQty,
+                     Shipped = shipped,
+                     Remaining = remaining
+                 };
+             })
+             .ToList();
 
-                return new
-                {
-                    Product = g.Key.Name,
-                    Clients = g.GroupBy(x => x.Client.Name)
-                               .ToDictionary(x => x.Key, x => x.Sum(d => d.Quantity)),
-                    Total = totalQty,
-                    Shipped = shipped,
-                    Remaining = remaining
-                };
-            })
-            .ToList();
 
 
             return Ok(new
@@ -361,19 +370,19 @@ namespace Hleb.Controllers
                 current = new 
                 {
                     clientName = current.Client?.Name,
-                    clientCode = current.Client?.ClientCode,
+                    clientCode = current.Client?.Id,
                     quantityToShip = current.TotalQuantity
                 },
                 next = next != null ? new 
                 {
                     clientName = next.Client?.Name,
-                    clientCode = next.Client?.ClientCode,
+                    clientCode = next.Client?.Id,
                     quantityToShip = next.TotalQuantity
                 } : null,
                 previous = previous != null ? new 
                 {
                     clientName = previous.Client?.Name,
-                    clientCode = previous.Client?.ClientCode,
+                    clientCode = previous.Client?.Id,
                     quantityToShip = previous.Shipped
                 } : null,
                 page = currentIndex,
@@ -469,19 +478,19 @@ namespace Hleb.Controllers
                     current = new 
                     {
                         clientName = current.Client?.Name,
-                        clientCode = current.Client?.ClientCode,
+                        clientCode = current.Client?.Id,
                         quantityToShip = current.TotalQuantity
                     },
                     next = next != null ? new 
                     {
                         clientName = next.Client?.Name,
-                        clientCode = next.Client?.ClientCode,
+                        clientCode = next.Client?.Id,
                         quantityToShip = next.TotalQuantity
                     } : null,
                     previous = previous != null ? new
                     {
                         clientName = previous.Client?.Name,
-                        clientCode = previous.Client?.ClientCode,
+                        clientCode = previous.Client?.Id,
                         quantityToShip = previous.Shipped
                     } : null,
                     page = currentIndex,

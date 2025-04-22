@@ -274,19 +274,19 @@ namespace Hleb.SignalR
                 current = new
                 {
                     clientName = current.Client?.Name,
-                    clientCode = current.Client?.ClientCode,
+                    clientCode = current.Client?.Id,
                     quantityToShip = current.TotalQuantity,
                 },
                 next = next != null ? new
                 {
                     clientName = next.Client?.Name,
-                    clientCode = next.Client?.ClientCode,
+                    clientCode = next.Client?.Id,
                     quantityToShip = next.TotalQuantity
                 } : null,
                 previous = previous != null ? new
                 {
                     clientName = previous.Client?.Name,
-                    clientCode = previous.Client?.ClientCode,
+                    clientCode = previous.Client?.Id,
                     quantityToShip = previous.Shipped
                 } : null,
                 page = page,
