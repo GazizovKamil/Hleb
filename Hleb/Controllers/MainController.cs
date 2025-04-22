@@ -218,38 +218,45 @@ namespace Hleb.Controllers
                 .GroupBy(s => s.DeliveryId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
+            var allClients = await _context.Clients.OrderBy(c => c.Id).ToListAsync();
+
             var pivot = deliveries
-             .GroupBy(d => d.Product)
-             .Select(g =>
-             {
-                 var totalQty = g.Sum(d => d.Quantity);
-                 var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
-                 var remaining = totalQty - shipped;
+                .GroupBy(d => d.Product)
+                .Select(g =>
+                {
+                    var totalQty = g.Sum(d => d.Quantity);
+                    var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
+                    var remaining = totalQty - shipped;
 
-                 var clients = g
-                     .GroupBy(d => d.Client.Id)
-                     .OrderBy(cg => cg.Key)
-                     .Select(cg => new
-                     {
-                         ClientId = cg.Key,
-                         Name = cg.First().Client.Name,
-                         Code = cg.First().Client.ClientCode,
-                         Quantity = cg.Sum(x => x.Quantity)
-                     })
-                     .ToList();
+                    var productId = g.First().ProductId;
 
-                 return new
-                 {
-                     Product = g.Key.Name,
-                     Clients = clients,
-                     Total = totalQty,
-                     Shipped = shipped,
-                     Remaining = remaining
-                 };
-             })
-             .ToList();
+                    var clients = allClients
+                        .Select(client =>
+                        {
+                            var clientDeliveries = g.Where(d => d.ClientId == client.Id);
+                            var quantity = clientDeliveries.Sum(d => d.Quantity);
 
+                            return new
+                            {
+                                ClientId = client.Id,
+                                Name = client.Name,
+                                Code = client.ClientCode,
+                                Quantity = quantity
+                            };
+                        })
+                        .OrderBy(c => c.ClientId)
+                        .ToList();
 
+                    return new
+                    {
+                        Product = g.Key.Name,
+                        Clients = clients,
+                        Total = totalQty,
+                        Shipped = shipped,
+                        Remaining = remaining
+                    };
+                })
+                .ToList();
 
             return Ok(new
             {
