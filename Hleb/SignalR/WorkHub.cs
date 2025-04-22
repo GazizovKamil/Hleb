@@ -3,6 +3,7 @@ using Hleb.Database;
 using Hleb.Dto;
 using Microsoft.AspNetCore.SignalR;
 using Sprache;
+using System.Text.Json;
 
 namespace Hleb.SignalR
 {
@@ -304,6 +305,13 @@ namespace Hleb.SignalR
                 data = send,
             };
 
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            string prettyJson = JsonSerializer.Serialize(message, options);
+            Console.WriteLine(prettyJson);
             await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
         }
     }
