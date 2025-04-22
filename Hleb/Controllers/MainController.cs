@@ -334,7 +334,6 @@ namespace Hleb.Controllers
             var totalShipped = grouped.Sum(x => x.Shipped);
             var totalRemaining = grouped.Sum(x => x.Remaining);
             var totalPlanned = grouped.Sum(x => x.TotalQuantity);
-            totalRemaining -= current.TotalQuantity;
 
             var shipmentLog = _context.ShipmentLogs
                 .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
@@ -513,7 +512,6 @@ namespace Hleb.Controllers
 
                 var totalPlanned = grouped.Sum(g => g.TotalQuantity);
                 var totalShipped = grouped.Sum(g => g.Shipped);
-                totalRemaining -= current.TotalQuantity;
 
                 int clientId = current.ClientId;
 
