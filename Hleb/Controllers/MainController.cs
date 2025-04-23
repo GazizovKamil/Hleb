@@ -283,7 +283,7 @@ namespace Hleb.Controllers
             var workerIntId = dto.workerId;
 
             var unfinished = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId && s.Remaining > 0 && s.Barcode != dto.barcode)
+                .Where(s => s.WorkerId == workerIntId && s.Remaining > s.Remaining - s.QuantityShipped && s.Barcode != dto.barcode)
                 .FirstOrDefault();
 
             if (unfinished != null)
