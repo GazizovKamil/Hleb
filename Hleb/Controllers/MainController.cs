@@ -283,15 +283,15 @@ namespace Hleb.Controllers
             var workerIntId = dto.workerId;
 
             var unfinished = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId && s.Remaining - s.QuantityShipped == 0 && s.Barcode != dto.barcode && s.ShipmentDate.Date == dto.date.Date)
-                .OrderByDescending(s => s.ShipmentDate)
+                .Where(s => s.WorkerId == workerIntId && s.Barcode != dto.barcode && s.ShipmentDate.Date == dto.date.Date)
+                .OrderByDescending(s => s.Id)
                 .FirstOrDefault();
 
-            if (unfinished == null)
+            if (unfinished != null && unfinished.Remaining - unfinished.QuantityShipped > 0)
             {
                 return Ok(new
                 {
-                    message = $"Невозможно отсканировать новый товар. Завершите отгрузку предыдущего продукта.",
+                    message = $"Невозможно отсканировать новый товар. Завершите отгрузку предыдущего продукта (штрихкод: {unfinished.Barcode}, клиент: {unfinished.ClientId})",
                     status = false,
                 });
             }
