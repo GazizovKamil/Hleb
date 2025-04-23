@@ -284,6 +284,7 @@ namespace Hleb.Controllers
 
             var unfinished = _context.ShipmentLogs
                 .Where(s => s.WorkerId == workerIntId && s.Remaining - s.QuantityShipped > 0 && s.Barcode != dto.barcode && s.ShipmentDate.Date == dto.date.Date)
+                .OrderByDescending(s => s.ShipmentDate)
                 .FirstOrDefault();
 
             if (unfinished != null)
