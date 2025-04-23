@@ -288,7 +288,7 @@ namespace Hleb.SignalR
                 {
                     clientName = previous.Client?.Name,
                     clientCode = previous.Client?.Id,
-                    quantityToShip = previous.Shipped
+                    quantityToShip = previous.TotalQuantity
                 } : null,
                 page = page,
                 totalPages = totalPages,
