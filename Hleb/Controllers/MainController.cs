@@ -286,7 +286,7 @@ namespace Hleb.Controllers
                 .Where(s => s.WorkerId == workerIntId && s.Remaining == s.QuantityShipped && s.Barcode != dto.barcode)
                 .FirstOrDefault();
 
-            if (unfinished != null)
+            if (unfinished == null)
             {
                 return Ok(new
                 {
