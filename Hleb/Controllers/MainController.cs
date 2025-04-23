@@ -122,6 +122,7 @@ namespace Hleb.Controllers
 
                         string clientName = row.Cell(6).GetValue<string>();
                         string clientCode = row.Cell(7).GetValue<string>();
+                        clientCode = clientCode.TrimStart('0');
 
                         var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode);
                         if (client == null)
