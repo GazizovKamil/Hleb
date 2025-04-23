@@ -156,7 +156,7 @@ namespace Hleb.SignalR
                     var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
 
                     var shipped = g.Sum(d => _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId)
+                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == barcode)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
                     var totalQty = g.Sum(d => d.Quantity);

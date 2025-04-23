@@ -320,7 +320,7 @@ namespace Hleb.Controllers
                     var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
 
                     var shipped = g.Sum(d => _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId)
+                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == dto.barcode)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -458,7 +458,7 @@ namespace Hleb.Controllers
                     var deliveryIds = g.Select(d => d.Id).ToList();
 
                     var shipped = await _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerId)
+                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerId && s.Barcode == barcode)
                         .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = g.Sum(d => d.Quantity);
