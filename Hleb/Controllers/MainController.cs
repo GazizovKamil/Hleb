@@ -303,7 +303,7 @@ namespace Hleb.Controllers
             {
                 return Ok(new
                 {
-                    message = "Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
+                    message = $"Этот продукт уже собран или собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
                     status = false,
                 });
             }
