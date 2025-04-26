@@ -79,6 +79,15 @@ namespace Hleb.Controllers
             var emptyRows = new List<int>();      // Строки с пустыми данными
             var errorRows = new List<string>();   // Строки с исключениями
 
+            var uploadedFile = new UploadedFile
+            {
+                FileName = dto.file.FileName,
+                UploadDate = selectedDate
+            };
+            _context.UploadedFiles.Add(uploadedFile);
+            await _context.SaveChangesAsync();
+
+
             using (var stream = new MemoryStream())
             {
                 await dto.file.CopyToAsync(stream);
@@ -163,7 +172,8 @@ namespace Hleb.Controllers
                             Quantity = quantity,
                             Weight = weight,
                             DeliveryAddress = address,
-                            CreateDate = selectedDate
+                            CreateDate = selectedDate,
+                            UploadedFileId = uploadedFile.Id
                         };
 
                         deliveries.Add(delivery);
@@ -194,11 +204,17 @@ namespace Hleb.Controllers
         {
             var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
 
-            var deliveries = await _context.Deliveries
+            var deliveriesQuery = _context.Deliveries
                 .Include(d => d.Client)
                 .Include(d => d.Product)
-                .Where(d => d.CreateDate.Date == selectedDate)
-                .ToListAsync();
+                .Where(d => d.CreateDate.Date == selectedDate);
+
+            if (dto.UploadedFileId > 0)
+            {
+                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == dto.UploadedFileId);
+            }
+
+            var deliveries = await deliveriesQuery.ToListAsync();
 
             if (deliveries.Count == 0)
             {
@@ -267,6 +283,46 @@ namespace Hleb.Controllers
                 date = selectedDate
             });
         }
+
+        [HttpPost("clear_by_document")]
+        //[CheckSession]
+        public async Task<IActionResult> ClearByDocument([FromBody] int uploadedFileId)
+        {
+            if (uploadedFileId <= 0)
+                return BadRequest("Некорректный идентификатор документа");
+
+            var deliveries = await _context.Deliveries
+                .Where(d => d.UploadedFileId == uploadedFileId)
+                .ToListAsync();
+
+            if (deliveries.Count == 0)
+            {
+                return Ok(new
+                {
+                    message = "Нет доставок для удаления по этому документу",
+                    status = false
+                });
+            }
+
+            var deliveryIds = deliveries.Select(d => d.Id).ToList();
+
+            var shipmentLogs = await _context.ShipmentLogs
+                .Where(s => deliveryIds.Contains(s.DeliveryId))
+                .ToListAsync();
+
+            _context.ShipmentLogs.RemoveRange(shipmentLogs);
+
+            _context.Deliveries.RemoveRange(deliveries);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = $"Удалено {deliveries.Count} доставок и {shipmentLogs.Count} логов отгрузки по документу {uploadedFileId}",
+                status = true
+            });
+        }
+
 
         [HttpPost("GetDeliveryInfo")]
         public async Task<IActionResult> GetDeliveryInfo([FromBody] GetDelivery dto)

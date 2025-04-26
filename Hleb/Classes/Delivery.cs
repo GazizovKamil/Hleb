@@ -35,5 +35,9 @@ namespace Hleb.Classes
 
         public virtual ICollection<ShipmentLog> ShipmentLogs { get; set; }
 
+        public int UploadedFileId { get; set; }
+
+        [ForeignKey("UploadedFileId")]
+        public UploadedFile UploadedFile { get; set; }
     }
 }

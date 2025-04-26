@@ -7,6 +7,7 @@ namespace Hleb.Dto
     public class BuildMap
     {
         public DateTime date { get; set; }
+        public int UploadedFileId { get; set; }
     }
 
     public class ImportExcel

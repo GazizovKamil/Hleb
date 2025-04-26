@@ -15,6 +15,8 @@ namespace Hleb.Database
         public DbSet<Delivery> Deliveries { get; set; }
         public DbSet<Session> Sessions { get; set; }
         public DbSet<ShipmentLog> ShipmentLogs { get; set; }
+        public DbSet<UploadedFile> UploadedFiles { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
