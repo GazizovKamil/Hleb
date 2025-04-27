@@ -16,9 +16,10 @@ namespace Hleb.SignalR
             _context = context;
         }
 
-        public async Task BackNext(string workerId, int page)
+        public async Task BackNext(string workerId, int page, DateTime date, int uploadedFileId)
         {
             var workerIntId = int.Parse(workerId);
+            var selectedDate = date.Date == default ? DateTime.Now : date.Date;
 
             var lastShipmentLog = _context.ShipmentLogs
                 .Where(s => s.WorkerId == workerIntId)
@@ -27,78 +28,15 @@ namespace Hleb.SignalR
 
             if (lastShipmentLog == null)
             {
-                var errorResponse = new { status = false, message = "Не найдены отгрузки для данного сборщика.",
-                    isComplete = false,
-                    data = new
-                    {
-                        workerId = workerIntId,
-                        productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        page = 0,
-                        totalPages = 0,
-                        totalPlanned = 0,
-                        totalRemaining = 0
-                    },
-                    workerId = workerIntId
-                };
-                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
+                await SendEmptyResponse(workerIntId, "Не найдены отгрузки для данного сборщика.");
                 return;
             }
 
             var barcode = lastShipmentLog.Barcode;
-
             var product = _context.Products.FirstOrDefault(p => p.Barcode == barcode);
             if (product == null)
             {
-                var errorResponse = new { status = false, message = "Продукт не найден",
-                    isComplete = false,
-                    data = new
-                    {
-                        workerId = workerIntId,
-                        productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        page = 0,
-                        totalPages = 0,
-                        totalPlanned = 0,
-                        totalRemaining = 0
-                    },
-                    workerId = workerIntId
-                };
-                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
+                await SendEmptyResponse(workerIntId, "Продукт не найден");
                 return;
             }
 
@@ -107,47 +45,21 @@ namespace Hleb.SignalR
 
             if (takenByAnother != null)
             {
-                var errorResponse = new { status = false, message = $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})",
-                    isComplete = false,
-                    data = new
-                    {
-                        workerId = workerIntId,
-                        productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        page = 0,
-                        totalPages = 0,
-                        totalPlanned = 0,
-                        totalRemaining = 0
-                    },
-                    workerId = workerIntId
-                };
-                await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
+                await SendEmptyResponse(workerIntId, $"Этот продукт уже собирается другим сборщиком (ID: {takenByAnother.WorkerId})");
                 return;
             }
 
-            var today = DateTime.Today;
+            var today = selectedDate.Date;
 
-            var deliveries = _context.Deliveries
-                 .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today)
-                 .OrderBy(d => d.ClientId)
-                 .ToList();
+            var deliveriesQuery = _context.Deliveries
+                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today);
+
+            if (uploadedFileId > 0)
+                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == uploadedFileId);
+
+            var deliveries = deliveriesQuery
+                .OrderBy(d => d.ClientId)
+                .ToList();
 
             var fullGrouped = deliveries
                 .GroupBy(d => d.ClientId)
@@ -192,39 +104,12 @@ namespace Hleb.SignalR
                     status = false,
                     isComplete = true,
                     workerId = workerIntId,
-                    data = new
-                    {
-                        workerId = workerIntId,
-                        productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        page = 0,
-                        totalPages = 0,
-                        totalPlanned = 0,
-                        totalRemaining = 0
-                    },
+                    data = EmptyData(workerIntId),
                     message = $"Все товары отгружены для продукта {product.Name}"
                 };
                 await Clients.Caller.SendAsync("ReceiveDeliveryInfo", confirmResponse);
                 return;
             }
-
 
             if (page < 0 || page >= totalPages)
                 page = 0;
@@ -233,16 +118,11 @@ namespace Hleb.SignalR
             var next = (page + 1 < totalPages) ? fullGrouped[page + 1] : null;
             var previous = (page - 1 >= 0) ? fullGrouped[page - 1] : null;
 
-            var totalShippedBefore = fullGrouped
-                .Take(page)
-                .Sum(g => g.Shipped);
-
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
-            var totalShipped = fullGrouped.Sum(g => g.Shipped);
             var totalRemaining = fullGrouped.Sum(g => g.Remaining);
 
             var shipmentLog = _context.ShipmentLogs
-                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
+                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == today && s.ClientId == current.ClientId);
 
             if (shipmentLog != null)
             {
@@ -259,12 +139,11 @@ namespace Hleb.SignalR
                     ShipmentDate = DateTime.Now,
                     Remaining = totalRemaining,
                     Notes = "Товар сканирован и отгружен",
-                    DeliveryId = deliveries.FirstOrDefault().Id
+                    DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId)?.Id ?? 0
                 };
 
                 _context.ShipmentLogs.Add(shipmentLog);
             }
-
 
             await _context.SaveChangesAsync();
 
@@ -313,6 +192,36 @@ namespace Hleb.SignalR
             string prettyJson = JsonSerializer.Serialize(message, options);
             Console.WriteLine(prettyJson);
             await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
+        }
+
+        // Вспомогательные методы для чистоты:
+        private async Task SendEmptyResponse(int workerId, string errorMessage)
+        {
+            var errorResponse = new
+            {
+                status = false,
+                message = errorMessage,
+                isComplete = false,
+                data = EmptyData(workerId),
+                workerId = workerId
+            };
+            await Clients.Caller.SendAsync("ReceiveDeliveryInfo", errorResponse);
+        }
+
+        private object EmptyData(int workerId)
+        {
+            return new
+            {
+                workerId = workerId,
+                productName = "",
+                current = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                next = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                previous = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                page = 0,
+                totalPages = 0,
+                totalPlanned = 0,
+                totalRemaining = 0
+            };
         }
     }
 }

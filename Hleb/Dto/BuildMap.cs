@@ -16,4 +16,14 @@ namespace Hleb.Dto
 
         public DateTime date { get; set; }
     }
+
+    public class GetDocument
+    {
+        public DateTime date { get; set; }
+    }
+
+    public class Clear
+    {
+        public int uploadedFileId { get; set; }
+    }
 }

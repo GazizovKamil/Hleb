@@ -286,13 +286,13 @@ namespace Hleb.Controllers
 
         [HttpPost("clear_by_document")]
         //[CheckSession]
-        public async Task<IActionResult> ClearByDocument([FromBody] int uploadedFileId)
+        public async Task<IActionResult> ClearByDocument([FromBody] Clear dto)
         {
-            if (uploadedFileId <= 0)
+            if (dto.uploadedFileId <= 0)
                 return BadRequest("Некорректный идентификатор документа");
 
             var deliveries = await _context.Deliveries
-                .Where(d => d.UploadedFileId == uploadedFileId)
+                .Where(d => d.UploadedFileId == dto.uploadedFileId)
                 .ToListAsync();
 
             if (deliveries.Count == 0)
@@ -318,11 +318,37 @@ namespace Hleb.Controllers
 
             return Ok(new
             {
-                message = $"Удалено {deliveries.Count} доставок и {shipmentLogs.Count} логов отгрузки по документу {uploadedFileId}",
+                message = $"Удалено {deliveries.Count} доставок и {shipmentLogs.Count} логов отгрузки по документу {dto.uploadedFileId}",
                 status = true
             });
         }
 
+        [HttpPost("get_documents")]
+        public async Task<IActionResult> GetUploadedFilesByDate([FromBody] GetDocument dto)
+        {
+            var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
+
+            var files = await _context.UploadedFiles
+                .Where(f => f.UploadDate.Date == selectedDate.Date)
+                .ToListAsync();
+
+            if (files.Count == 0)
+            {
+                return Ok(new
+                {
+                    message = "",
+                    status = false,
+                    data = new {}
+                });
+            }
+
+            return Ok(new
+            {
+                message = "",
+                status = true,
+                data = files
+            });
+        }
 
         [HttpPost("GetDeliveryInfo")]
         public async Task<IActionResult> GetDeliveryInfo([FromBody] GetDelivery dto)
@@ -365,8 +391,15 @@ namespace Hleb.Controllers
                 });
             }
 
-            var deliveries = _context.Deliveries
-                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == dto.date.Date)
+            var deliveriesQuery = _context.Deliveries
+                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == dto.date.Date);
+
+            if (dto.UploadedFileId > 0)
+            {
+                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == dto.UploadedFileId);
+            }
+
+            var deliveries = deliveriesQuery
                 .OrderBy(d => d.ClientId)
                 .ToList();
 
@@ -399,13 +432,12 @@ namespace Hleb.Controllers
             {
                 return Ok(new
                 {
-                    message = $"Все товары отгружены для продукта {product.Name})",
+                    message = $"Все товары отгружены для продукта {product.Name}",
                     status = false,
                 });
             }
 
             var currentIndex = 0;
-
             var current = grouped.ElementAtOrDefault(currentIndex);
             var next = grouped.ElementAtOrDefault(currentIndex + 1);
             var previous = grouped.ElementAtOrDefault(currentIndex - 1);
@@ -414,8 +446,13 @@ namespace Hleb.Controllers
             var totalRemaining = grouped.Sum(x => x.Remaining);
             var totalPlanned = grouped.Sum(x => x.TotalQuantity);
 
+            var currentClientId = (int)current.ClientId;
+
             var shipmentLog = _context.ShipmentLogs
-                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == current.ClientId);
+                .FirstOrDefault(s => s.WorkerId == workerIntId
+                                     && s.Barcode == dto.barcode
+                                     && s.ShipmentDate.Date == DateTime.Now.Date
+                                     && s.ClientId == currentClientId);
 
             if (shipmentLog != null)
             {
@@ -428,12 +465,12 @@ namespace Hleb.Controllers
                 {
                     WorkerId = workerIntId,
                     Barcode = dto.barcode,
-                    ClientId = current.ClientId,
+                    ClientId = currentClientId,
                     QuantityShipped = current.TotalQuantity,
                     ShipmentDate = DateTime.Now,
                     Remaining = totalRemaining,
                     Notes = "Товар сканирован и отгружен",
-                    DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId).Id
+                    DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == currentClientId)?.Id ?? 0
                 };
 
                 _context.ShipmentLogs.Add(shipmentLog);
@@ -445,19 +482,19 @@ namespace Hleb.Controllers
             {
                 workerId = workerIntId,
                 productName = product.Name,
-                current = new 
+                current = new
                 {
                     clientName = current.Client?.Name,
                     clientCode = current.Client?.Id,
                     quantityToShip = current.TotalQuantity
                 },
-                next = next != null ? new 
+                next = next != null ? new
                 {
                     clientName = next.Client?.Name,
                     clientCode = next.Client?.Id,
                     quantityToShip = next.TotalQuantity
                 } : null,
-                previous = previous != null ? new 
+                previous = previous != null ? new
                 {
                     clientName = previous.Client?.Name,
                     clientCode = previous.Client?.Id,
@@ -478,13 +515,23 @@ namespace Hleb.Controllers
         }
 
 
+
         [HttpPost("GetCurrentAssignments")]
         public async Task<IActionResult> GetCurrentAssignments([FromBody] BuildMap dto)
         {
-            var today = dto.date.Date == default ? DateTime.Now : dto.date.Date; ;
+            var today = dto.date.Date == default ? DateTime.Now.Date : dto.date.Date;
 
-            var latestLogs = await _context.ShipmentLogs
-                .Where(s => s.ShipmentDate.Date == today)
+            // Фильтруем логи по дате (и UploadedFileId, если указан)
+            var logsQuery = _context.ShipmentLogs
+                .Where(s => s.ShipmentDate.Date == today);
+
+            if (dto.UploadedFileId > 0)
+            {
+                logsQuery = logsQuery
+                    .Where(s => _context.Deliveries.Any(d => d.Id == s.DeliveryId && d.UploadedFileId == dto.UploadedFileId));
+            }
+
+            var latestLogs = await logsQuery
                 .GroupBy(s => s.WorkerId)
                 .Select(g => g.OrderByDescending(x => x.ShipmentDate).FirstOrDefault())
                 .ToListAsync();
@@ -496,17 +543,28 @@ namespace Hleb.Controllers
                 var workerId = log.WorkerId;
                 var barcode = log.Barcode;
 
+                // Достаём продукт
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == barcode);
                 if (product == null)
                     continue;
 
-                var deliveries = await _context.Deliveries
-                    .Where(d => d.ProductId == product.Id && d.CreateDate.Date  == today)
+                // Доставки по продукту и дате (и UploadedFileId если указан)
+                var deliveriesQuery = _context.Deliveries
+                    .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today);
+
+                if (dto.UploadedFileId > 0)
+                {
+                    deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == dto.UploadedFileId);
+                }
+
+                var deliveries = await deliveriesQuery
                     .OrderBy(d => d.ClientId)
                     .ToListAsync();
 
-                var grouped = new List<dynamic>();
+                if (deliveries.Count == 0)
+                    continue;
 
+                var grouped = new List<dynamic>();
                 var deliveryGroups = deliveries.GroupBy(d => d.ClientId);
 
                 foreach (var g in deliveryGroups)
@@ -515,7 +573,7 @@ namespace Hleb.Controllers
                     var deliveryIds = g.Select(d => d.Id).ToList();
 
                     var shipped = await _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerId && s.Barcode == barcode)
+                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode)
                         .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -532,54 +590,40 @@ namespace Hleb.Controllers
                 }
 
                 grouped = grouped.ToList();
-                var totalRemaining = grouped.Sum(g => g.Remaining);
 
+                var totalRemaining = grouped.Sum(g => g.Remaining);
                 var allClientIds = grouped.Select(g => g.ClientId).ToList();
 
-                var shippedClientIds = _context.ShipmentLogs
-                    .Where(s => allClientIds.Contains(s.ClientId) && s.ShipmentDate.Date == today && s.Barcode == barcode && s.WorkerId == workerId)
+                var shippedClientIds = await _context.ShipmentLogs
+                    .Where(s => allClientIds.Contains(s.ClientId)
+                                && s.ShipmentDate.Date == today
+                                && s.Barcode == barcode
+                                && s.WorkerId == workerId)
                     .Select(s => s.ClientId)
                     .Distinct()
-                    .ToList();
+                    .ToListAsync();
 
                 var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
 
                 if (allClientsShipped)
                 {
-                    var confirmResponse = new
+                    result.Add(new
                     {
                         workerId = workerId,
                         productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
+                        current = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                        next = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                        previous = new { clientName = "", clientCode = "", quantityToShip = 0 },
                         page = 0,
                         totalPages = 0,
                         totalPlanned = 0,
                         totalRemaining = 0
-                    };
-                    result.Add(confirmResponse);
+                    });
                     continue;
                 }
 
                 var currentClientId = log.ClientId;
                 var currentIndex = grouped.FindIndex(g => g.ClientId == currentClientId);
-
                 if (currentIndex == -1)
                     currentIndex = 0;
 
@@ -587,27 +631,32 @@ namespace Hleb.Controllers
                 var next = (currentIndex + 1 < grouped.Count) ? grouped[currentIndex + 1] : null;
                 var previous = (currentIndex - 1 >= 0) ? grouped[currentIndex - 1] : null;
 
-                var totalShippedBefore = grouped.Take(currentIndex).Sum(g => g.Shipped);
-
                 var totalPlanned = grouped.Sum(g => g.TotalQuantity);
-                var totalShipped = grouped.Sum(g => g.Shipped);
 
-                int clientId = current.ClientId;
+                // находим актуальный лог для оставшегося количества
+                var deliveryIdsForProduct = deliveries.Select(d => d.Id).ToList();
+                //var currentClientId = (int)current.ClientId;
 
-                var shipmentLog = _context.ShipmentLogs
-                .FirstOrDefault(s => s.WorkerId == workerId && s.Barcode == barcode && s.ShipmentDate.Date == DateTime.Now.Date && s.ClientId == clientId);
+                var shipmentLog = await _context.ShipmentLogs
+                    .Where(s => s.WorkerId == workerId
+                                && s.Barcode == barcode
+                                && s.ShipmentDate.Date == today
+                                && deliveryIdsForProduct.Contains(s.DeliveryId)
+                                && s.ClientId == currentClientId)
+                    .OrderByDescending(s => s.ShipmentDate)
+                    .FirstOrDefaultAsync();
 
-                var send = new 
+                var send = new
                 {
                     workerId = workerId,
                     productName = product.Name,
-                    current = new 
+                    current = new
                     {
                         clientName = current.Client?.Name,
                         clientCode = current.Client?.Id,
                         quantityToShip = current.TotalQuantity
                     },
-                    next = next != null ? new 
+                    next = next != null ? new
                     {
                         clientName = next.Client?.Name,
                         clientCode = next.Client?.Id,
@@ -622,14 +671,14 @@ namespace Hleb.Controllers
                     page = currentIndex,
                     totalPages = grouped.Count,
                     totalPlanned = totalPlanned,
-                    totalRemaining = shipmentLog.Remaining
+                    totalRemaining = shipmentLog?.Remaining ?? (current.TotalQuantity - current.Shipped)
                 };
 
                 result.Add(send);
             }
 
+            // Добавляем пустые позиции для сборщиков, которых нет в списке
             var existingWorkerIds = result.Select(r => (int)r.workerId).ToHashSet();
-
             for (int workerId = 1; workerId <= 3; workerId++)
             {
                 if (!existingWorkerIds.Contains(workerId))
@@ -638,24 +687,9 @@ namespace Hleb.Controllers
                     {
                         workerId = workerId,
                         productName = "",
-                        current = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        next = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
-                        previous = new
-                        {
-                            clientName = "",
-                            clientCode = "",
-                            quantityToShip = 0
-                        },
+                        current = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                        next = new { clientName = "", clientCode = "", quantityToShip = 0 },
+                        previous = new { clientName = "", clientCode = "", quantityToShip = 0 },
                         page = 0,
                         totalPages = 0,
                         totalPlanned = 0,
@@ -664,12 +698,11 @@ namespace Hleb.Controllers
                 }
             }
 
-
             return Ok(new
             {
                 message = "",
                 status = true,
-                data = result,
+                data = result
             });
         }
     }
