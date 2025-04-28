@@ -16,7 +16,7 @@ namespace Hleb.SignalR
             _context = context;
         }
 
-        public async Task BackNext(string workerId, int page, DateTime date, int uploadedFileId)
+        public async Task BackNext(string workerId, int page, DateTime date, int fileId)
         {
             var workerIntId = int.Parse(workerId);
             var selectedDate = date.Date == default ? DateTime.Now : date.Date;
@@ -41,7 +41,7 @@ namespace Hleb.SignalR
             }
 
             var takenByAnother = _context.ShipmentLogs
-                .FirstOrDefault(s => s.Barcode == barcode && s.WorkerId != workerIntId);
+                .FirstOrDefault(s => s.Barcode == barcode && s.WorkerId != workerIntId && s.Delivery.UploadedFileId == fileId);
 
             if (takenByAnother != null)
             {
@@ -54,8 +54,8 @@ namespace Hleb.SignalR
             var deliveriesQuery = _context.Deliveries
                 .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today);
 
-            if (uploadedFileId > 0)
-                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == uploadedFileId);
+            if (fileId > 0)
+                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == fileId);
 
             var deliveries = deliveriesQuery
                 .OrderBy(d => d.ClientId)
@@ -68,7 +68,7 @@ namespace Hleb.SignalR
                     var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
 
                     var shipped = g.Sum(d => _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == barcode)
+                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == fileId)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -90,7 +90,7 @@ namespace Hleb.SignalR
             var allClientIds = fullGrouped.Select(g => g.ClientId).ToList();
 
             var shippedClientIds = _context.ShipmentLogs
-                .Where(s => allClientIds.Contains(s.ClientId) && s.ShipmentDate.Date == today && s.Barcode == barcode && s.WorkerId == workerIntId)
+                .Where(s => allClientIds.Contains(s.ClientId) && s.Delivery.UploadedFileId == fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
                 .Select(s => s.ClientId)
                 .Distinct()
                 .ToList();
@@ -122,7 +122,7 @@ namespace Hleb.SignalR
             var totalRemaining = fullGrouped.Sum(g => g.Remaining);
 
             var shipmentLog = _context.ShipmentLogs
-                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.ShipmentDate.Date == today && s.ClientId == current.ClientId);
+                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == fileId && s.ClientId == current.ClientId);
 
             if (shipmentLog != null)
             {

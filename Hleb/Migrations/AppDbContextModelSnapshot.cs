@@ -63,6 +63,9 @@ namespace Hleb.Migrations
                     b.Property<int>("RouteId")
                         .HasColumnType("int");
 
+                    b.Property<int>("UploadedFileId")
+                        .HasColumnType("int");
+
                     b.Property<double>("Weight")
                         .HasColumnType("double");
 
@@ -73,6 +76,8 @@ namespace Hleb.Migrations
                     b.HasIndex("ProductId");
 
                     b.HasIndex("RouteId");
+
+                    b.HasIndex("UploadedFileId");
 
                     b.ToTable("Deliveries");
                 });
@@ -183,6 +188,24 @@ namespace Hleb.Migrations
                     b.ToTable("ShipmentLogs");
                 });
 
+            modelBuilder.Entity("Hleb.Classes.UploadedFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UploadDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UploadedFiles");
+                });
+
             modelBuilder.Entity("Hleb.Classes.Delivery", b =>
                 {
                     b.HasOne("Hleb.Classes.Client", "Client")
@@ -203,11 +226,19 @@ namespace Hleb.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Hleb.Classes.UploadedFile", "UploadedFile")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("UploadedFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Client");
 
                     b.Navigation("Product");
 
                     b.Navigation("Route");
+
+                    b.Navigation("UploadedFile");
                 });
 
             modelBuilder.Entity("Hleb.Classes.ShipmentLog", b =>
@@ -237,6 +268,11 @@ namespace Hleb.Migrations
                 });
 
             modelBuilder.Entity("Hleb.Classes.Routes", b =>
+                {
+                    b.Navigation("Deliveries");
+                });
+
+            modelBuilder.Entity("Hleb.Classes.UploadedFile", b =>
                 {
                     b.Navigation("Deliveries");
                 });
