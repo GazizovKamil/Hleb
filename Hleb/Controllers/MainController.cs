@@ -557,11 +557,10 @@ namespace Hleb.Controllers
 
 
         [HttpPost("GetCurrentAssignments")]
-        public async Task<IActionResult> GetCurrentAssignments([FromBody] BuildMap dto)
+        public async Task<IActionResult> GetCurrentAssignments([FromBody] GetInfo dto)
         {
             var today = dto.date.Date == default ? DateTime.Now.Date : dto.date.Date;
 
-            // Фильтруем логи по дате (и UploadedFileId, если указан)
             var logsQuery = _context.ShipmentLogs
                 .Where(s => s.ShipmentDate.Date == today);
 
@@ -576,6 +575,15 @@ namespace Hleb.Controllers
                 .Select(g => g.OrderByDescending(x => x.ShipmentDate).FirstOrDefault())
                 .ToListAsync();
 
+            // Определяем максимальное количество сборщиков
+            var activeWorkerIds = await _context.ShipmentLogs
+                .Where(s => s.ShipmentDate.Date == today)
+                .Select(s => s.WorkerId)
+                .Distinct()
+                .ToListAsync();
+
+            int maxWorkerCount = dto.workerCount;
+
             var result = new List<dynamic>();
 
             foreach (var log in latestLogs)
@@ -583,12 +591,10 @@ namespace Hleb.Controllers
                 var workerId = log.WorkerId;
                 var barcode = log.Barcode;
 
-                // Достаём продукт
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == barcode);
                 if (product == null)
                     continue;
 
-                // Доставки по продукту и дате (и UploadedFileId если указан)
                 var deliveriesQuery = _context.Deliveries
                     .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today);
 
@@ -673,9 +679,7 @@ namespace Hleb.Controllers
 
                 var totalPlanned = grouped.Sum(g => g.TotalQuantity);
 
-                // находим актуальный лог для оставшегося количества
                 var deliveryIdsForProduct = deliveries.Select(d => d.Id).ToList();
-                //var currentClientId = (int)current.ClientId;
 
                 var shipmentLog = await _context.ShipmentLogs
                     .Where(s => s.WorkerId == workerId
@@ -717,9 +721,8 @@ namespace Hleb.Controllers
                 result.Add(send);
             }
 
-            // Добавляем пустые позиции для сборщиков, которых нет в списке
             var existingWorkerIds = result.Select(r => (int)r.workerId).ToHashSet();
-            for (int workerId = 1; workerId <= 3; workerId++)
+            for (int workerId = 1; workerId <= maxWorkerCount; workerId++)
             {
                 if (!existingWorkerIds.Contains(workerId))
                 {
@@ -742,7 +745,7 @@ namespace Hleb.Controllers
             {
                 message = "",
                 status = true,
-                data = result
+                data = result,
             });
         }
     }

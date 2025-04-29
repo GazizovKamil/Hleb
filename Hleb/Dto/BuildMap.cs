@@ -10,6 +10,13 @@ namespace Hleb.Dto
         public int fileId { get; set; }
     }
 
+    public class GetInfo
+    {
+        public DateTime date { get; set; }
+        public int fileId { get; set; }
+        public int workerCount { get; set; }
+    }
+
     public class ImportExcel
     {
         public IFormFile file { get; set; }
