@@ -248,11 +248,11 @@ namespace Hleb.Controllers
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
             // Выделяем список уникальных клиентов из доставок
-            var clients = deliveries
-                .Select(d => new { d.ClientId, d.ClientName, d.ClientCode })
+            var clients = await _context.Clients
+                .Select(d => new { d.Id, d.Name, d.ClientCode })
                 .Distinct()
-                .OrderBy(c => c.ClientId)
-                .ToList();
+                .OrderBy(c => c.Id)
+                .ToListAsync();
 
             // Формируем сводку по продуктам
             var pivot = deliveries
@@ -267,13 +267,13 @@ namespace Hleb.Controllers
                         .Select(client =>
                         {
                             var quantity = g
-                                .Where(d => d.ClientId == client.ClientId)
+                                .Where(d => d.ClientId == client.Id)
                                 .Sum(d => d.Quantity);
 
                             return new
                             {
-                                client.ClientId,
-                                Name = client.ClientName,
+                                ClientId = client.Id,
+                                Name = client.Name,
                                 Code = client.ClientCode,
                                 Quantity = quantity
                             };
