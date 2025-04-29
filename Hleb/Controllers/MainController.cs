@@ -473,7 +473,7 @@ namespace Hleb.Controllers
                 .OrderByDescending(s => s.Id)
                 .FirstOrDefault();
 
-            if (!grouped.Any())
+            if (finish != null && finish.Remaining - finish.QuantityShipped == 0)
             {
                 return Ok(new
                 {
@@ -745,6 +745,8 @@ namespace Hleb.Controllers
                     });
                 }
             }
+
+            result = result.OrderBy(r => (int)r.workerId).ToList();
 
             return Ok(new
             {
