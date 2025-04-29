@@ -171,7 +171,7 @@ namespace Hleb.SignalR
                     quantityToShip = previous.TotalQuantity
                 } : null,
                 page = page,
-                totalPages = totalPages,
+                totalPages = totalPages + 1,
                 totalPlanned = totalPlanned,
                 totalRemaining = shipmentLog.Remaining
             };
