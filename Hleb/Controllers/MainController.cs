@@ -473,7 +473,7 @@ namespace Hleb.Controllers
                 .OrderByDescending(s => s.Id)
                 .FirstOrDefault();
 
-            if (finish != null && finish.Remaining - finish.QuantityShipped == 0)
+            if (!grouped.Any())
             {
                 return Ok(new
                 {
