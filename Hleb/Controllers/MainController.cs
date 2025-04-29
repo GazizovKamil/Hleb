@@ -468,7 +468,12 @@ namespace Hleb.Controllers
                 .OrderBy(x => x.ClientId)
                 .ToList();
 
-            if (!grouped.Any())
+            var finish = _context.ShipmentLogs
+                .Where(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.Delivery.UploadedFileId == dto.fileId)
+                .OrderByDescending(s => s.Id)
+                .FirstOrDefault();
+
+            if (finish != null && finish.Remaining - finish.QuantityShipped == 0)
             {
                 return Ok(new
                 {
