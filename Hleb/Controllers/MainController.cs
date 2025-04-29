@@ -496,7 +496,7 @@ namespace Hleb.Controllers
 
             if (shipmentLog != null)
             {
-                shipmentLog.QuantityShipped = current.Remaining;
+                //shipmentLog.QuantityShipped = current.Remaining;
                 shipmentLog.ShipmentDate = DateTime.Now;
             }
             else

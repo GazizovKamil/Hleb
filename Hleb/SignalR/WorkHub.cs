@@ -97,7 +97,12 @@ namespace Hleb.SignalR
 
             var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
 
-            if (allClientsShipped)
+            if (page < 0 || page >= totalPages)
+                page = 0;
+
+            var current = fullGrouped.Skip(page).First();
+
+            if (current == null)
             {
                 var confirmResponse = new
                 {
@@ -111,10 +116,6 @@ namespace Hleb.SignalR
                 return;
             }
 
-            if (page < 0 || page >= totalPages)
-                page = 0;
-
-            var current = fullGrouped.Skip(page).First();
             var next = (page + 1 < totalPages) ? fullGrouped[page + 1] : null;
             var previous = (page - 1 >= 0) ? fullGrouped[page - 1] : null;
 
