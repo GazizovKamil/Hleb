@@ -86,7 +86,18 @@ namespace Hleb.SignalR
                 .OrderBy(g => g.ClientId)
                 .ToList();
 
-            if (page > fullGrouped.Count)
+            var totalPages = fullGrouped.Count;
+            var allClientIds = fullGrouped.Select(g => g.ClientId).ToList();
+
+            var shippedClientIds = _context.ShipmentLogs
+                .Where(s => allClientIds.Contains(s.ClientId) && s.Delivery.UploadedFileId == fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
+                .Select(s => s.ClientId)
+                .Distinct()
+                .ToList();
+
+            var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
+
+            if (allClientsShipped)
             {
                 var confirmResponse = new
                 {
@@ -100,22 +111,10 @@ namespace Hleb.SignalR
                 return;
             }
 
-            var totalPages = fullGrouped.Count;
-            var allClientIds = fullGrouped.Select(g => g.ClientId).ToList();
-
-            var shippedClientIds = _context.ShipmentLogs
-                .Where(s => allClientIds.Contains(s.ClientId) && s.Delivery.UploadedFileId == fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
-                .Select(s => s.ClientId)
-                .Distinct()
-                .ToList();
-
-            var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
-
             if (page < 0 || page >= totalPages)
                 page = 0;
 
             var current = fullGrouped.Skip(page).First();
-
             var next = (page + 1 < totalPages) ? fullGrouped[page + 1] : null;
             var previous = (page - 1 >= 0) ? fullGrouped[page - 1] : null;
 
@@ -171,7 +170,7 @@ namespace Hleb.SignalR
                     quantityToShip = previous.TotalQuantity
                 } : null,
                 page = page,
-                totalPages = totalPages - 1,
+                totalPages = totalPages,
                 totalPlanned = totalPlanned,
                 totalRemaining = shipmentLog.Remaining
             };
