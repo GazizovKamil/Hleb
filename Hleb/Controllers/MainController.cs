@@ -582,12 +582,17 @@ namespace Hleb.Controllers
 
             // Определяем максимальное количество сборщиков
             var activeWorkerIds = await _context.ShipmentLogs
-                .Where(s => s.ShipmentDate.Date == today)
+                .Where(s => s.ShipmentDate.Date == today && s.Delivery.UploadedFileId == dto.fileId)
                 .Select(s => s.WorkerId)
                 .Distinct()
                 .ToListAsync();
 
-            int maxWorkerCount = dto.workerCount;
+            int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
+
+            if(maxWorkerCount < dto.workerCount)
+            {
+                maxWorkerCount = dto.workerCount;
+            }
 
             var result = new List<dynamic>();
 
