@@ -102,7 +102,7 @@ namespace Hleb.SignalR
             //if (page < 0 || page >= totalPages)
             //    page = 0;
 
-            var current = fullGrouped.Skip(page).First();
+            var current = fullGrouped.Skip(page).FirstOrDefault();
 
             if (current == null)
             {
