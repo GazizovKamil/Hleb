@@ -247,13 +247,12 @@ namespace Hleb.Controllers
                 .GroupBy(s => s.DeliveryId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
-            var clientIds = deliveries
-                .Select(d => d.ClientId)
-                .Distinct()
-                .ToList();
+            //var clientIds = deliveries
+            //    .Select(d => d.ClientId)
+            //    .Distinct()
+            //    .ToList();
 
             var clients = await _context.Clients
-                .Where(c => clientIds.Contains(c.Id))
                 .Select(c => new { c.Id, c.Name, c.ClientCode })
                 .OrderBy(c => c.Id)
                 .ToListAsync();
