@@ -484,6 +484,15 @@ namespace Hleb.Controllers
 
             var currentIndex = 0;
             var current = grouped.ElementAtOrDefault(currentIndex);
+
+            if (current == null) {
+                return Ok(new
+                {
+                    message = $"Нет доставок для продукта {product.Name}",
+                    status = false,
+                });
+            }
+
             var next = grouped.ElementAtOrDefault(currentIndex + 1);
             var previous = grouped.ElementAtOrDefault(currentIndex - 1);
 
