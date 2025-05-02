@@ -22,7 +22,7 @@ namespace Hleb.SignalR
             var selectedDate = date.Date == default ? DateTime.Now : date.Date;
 
             var lastShipmentLog = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId && s.Delivery.UploadedFileId == fileId)
+                .Where(s => s.WorkerId == workerIntId)
                 .OrderByDescending(s => s.ShipmentDate)
                 .FirstOrDefault();
 
