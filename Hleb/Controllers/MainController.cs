@@ -247,12 +247,17 @@ namespace Hleb.Controllers
                 .GroupBy(s => s.DeliveryId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
-            // Выделяем список уникальных клиентов из доставок
-            var clients = await _context.Clients
-                .Select(d => new { d.Id, d.Name, d.ClientCode })
+            var clientIds = deliveries
+                .Select(d => d.ClientId)
                 .Distinct()
+                .ToList();
+
+            var clients = await _context.Clients
+                .Where(c => clientIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Name, c.ClientCode })
                 .OrderBy(c => c.Id)
                 .ToListAsync();
+
 
             // Формируем сводку по продуктам
             var pivot = deliveries
