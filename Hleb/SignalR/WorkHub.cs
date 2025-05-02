@@ -2,6 +2,7 @@
 using Hleb.Database;
 using Hleb.Dto;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Sprache;
 using System.Text.Json;
 
@@ -40,8 +41,9 @@ namespace Hleb.SignalR
                 return;
             }
 
-            var takenByAnother = _context.ShipmentLogs
-                .FirstOrDefault(s => s.Barcode == barcode && s.WorkerId != workerIntId && s.Delivery.UploadedFileId == fileId);
+            var takenByAnother = await _context.ShipmentLogs
+                .Include(x => x.Delivery)
+                .FirstOrDefaultAsync(s => s.Barcode == barcode && s.WorkerId != workerIntId && s.Delivery.UploadedFileId == fileId);
 
             if (takenByAnother != null)
             {
@@ -65,6 +67,7 @@ namespace Hleb.SignalR
                     var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
 
                     var shipped = g.Sum(d => _context.ShipmentLogs
+                        .Include(x => x.Delivery)
                         .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == fileId)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0);
 
@@ -86,7 +89,7 @@ namespace Hleb.SignalR
             var totalPages = fullGrouped.Count;
             var allClientIds = fullGrouped.Select(g => g.ClientId).ToList();
 
-            var shippedClientIds = _context.ShipmentLogs
+            var shippedClientIds = _context.ShipmentLogs.Include(x => x.Delivery)
                 .Where(s => allClientIds.Contains(s.ClientId) && s.Delivery.UploadedFileId == fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
                 .Select(s => s.ClientId)
                 .Distinct()
@@ -119,7 +122,7 @@ namespace Hleb.SignalR
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalRemaining = fullGrouped.Sum(g => g.Remaining);
 
-            var shipmentLog = _context.ShipmentLogs
+            var shipmentLog = _context.ShipmentLogs.Include(x => x.Delivery)
                 .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == fileId && s.ClientId == current.ClientId);
 
             if (shipmentLog != null)
