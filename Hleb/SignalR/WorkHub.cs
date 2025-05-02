@@ -22,7 +22,7 @@ namespace Hleb.SignalR
             var selectedDate = date.Date == default ? DateTime.Now : date.Date;
 
             var lastShipmentLog = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId)
+                .Where(s => s.WorkerId == workerIntId && s.Delivery.UploadedFileId == fileId)
                 .OrderByDescending(s => s.ShipmentDate)
                 .FirstOrDefault();
 
@@ -52,10 +52,7 @@ namespace Hleb.SignalR
             var today = selectedDate.Date;
 
             var deliveriesQuery = _context.Deliveries
-                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == today);
-
-            if (fileId > 0)
-                deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == fileId);
+                .Where(d => d.ProductId == product.Id && d.UploadedFileId == fileId);
 
             var deliveries = deliveriesQuery
                 .OrderBy(d => d.ClientId)
@@ -96,8 +93,6 @@ namespace Hleb.SignalR
                 .ToList();
 
             var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
-
-            
 
             //if (page < 0 || page >= totalPages)
             //    page = 0;
@@ -193,6 +188,7 @@ namespace Hleb.SignalR
             };
 
             string prettyJson = JsonSerializer.Serialize(message, options);
+            Console.WriteLine(workerId + " " + page + " " + date + " " + fileId);
             Console.WriteLine(prettyJson);
             await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
         }
