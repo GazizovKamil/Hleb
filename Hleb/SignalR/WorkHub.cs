@@ -27,6 +27,9 @@ namespace Hleb.SignalR
                 .OrderByDescending(s => s.ShipmentDate)
                 .FirstOrDefault();
 
+            Console.WriteLine(workerId + " " + page + " " + date + " " + fileId);
+
+
             if (lastShipmentLog == null)
             {
                 await SendEmptyResponse(workerIntId, "Не найдены отгрузки для данного сборщика.");
@@ -191,7 +194,6 @@ namespace Hleb.SignalR
             };
 
             string prettyJson = JsonSerializer.Serialize(message, options);
-            Console.WriteLine(workerId + " " + page + " " + date + " " + fileId);
             Console.WriteLine(prettyJson);
             await Clients.Caller.SendAsync("ReceiveDeliveryInfo", message);
         }
