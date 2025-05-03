@@ -247,16 +247,16 @@ namespace Hleb.Controllers
                 .GroupBy(s => s.DeliveryId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
 
-            //var clientIds = deliveries
-            //    .Select(d => d.ClientId)
-            //    .Distinct()
-            //    .ToList();
+            var clientIds = deliveries
+                .Select(d => d.ClientId)
+                .Distinct()
+                .ToList();
 
             var clients = await _context.Clients
+                .Where(c => clientIds.Contains(c.Id))
                 .Select(c => new { c.Id, c.Name, c.ClientCode })
                 .OrderBy(c => c.Id)
                 .ToListAsync();
-
 
             // Формируем сводку по продуктам
             var pivot = deliveries
@@ -349,10 +349,18 @@ namespace Hleb.Controllers
                 .Where(s => deliveryIds.Contains(s.DeliveryId))
                 .ToListAsync();
 
+            var clients = await _context.Clients
+                .ToListAsync();
+
+            _context.Clients.RemoveRange(clients);
+
             _context.ShipmentLogs.RemoveRange(shipmentLogs);
 
             _context.Deliveries.RemoveRange(deliveries);
             _context.UploadedFiles.Remove(file);
+
+            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
+
             await _context.SaveChangesAsync();
 
             return Ok(new
