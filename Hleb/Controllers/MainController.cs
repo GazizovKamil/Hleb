@@ -359,9 +359,9 @@ namespace Hleb.Controllers
             _context.Deliveries.RemoveRange(deliveries);
             _context.UploadedFiles.Remove(file);
 
+            await _context.SaveChangesAsync();
             await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
 
-            await _context.SaveChangesAsync();
 
             return Ok(new
             {
