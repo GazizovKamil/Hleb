@@ -176,22 +176,6 @@ namespace Hleb.Controllers
                             CreateDate = selectedDate,
                             UploadedFileId = uploadedFile.Id
                         });
-
-                        // Доставки с нулём
-                        foreach (var otherClient in clients.Values.Where(c => c.Id != client.Id))
-                        {
-                            zeroDeliveries.Add(new Delivery
-                            {
-                                Product = product,
-                                Client = otherClient,
-                                Route = route,
-                                Quantity = 0,
-                                Weight = 0,
-                                DeliveryAddress = "-",
-                                CreateDate = selectedDate,
-                                UploadedFileId = uploadedFile.Id
-                            });
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -201,7 +185,32 @@ namespace Hleb.Controllers
                 }
             }
 
-            await _context.SaveChangesAsync(); // сохраняем все новые продукты, клиентов, маршруты
+            // Сохраняем справочники, чтобы получить Id
+            await _context.SaveChangesAsync();
+
+            // Формируем нулевые доставки (по каждому продукту и клиенту, которых нет в deliveries)
+            var allClients = clients.Values.ToList();
+            var allProducts = products.Values.ToList();
+            var allRoutes = routes.Values.ToList();
+
+            foreach (var delivery in deliveries)
+            {
+                foreach (var otherClient in allClients.Where(c => c.Id != delivery.ClientId))
+                {
+                    zeroDeliveries.Add(new Delivery
+                    {
+                        ProductId = delivery.ProductId,
+                        ClientId = otherClient.Id,
+                        RouteId = delivery.RouteId,
+                        Quantity = 0,
+                        Weight = 0,
+                        DeliveryAddress = "-",
+                        CreateDate = selectedDate,
+                        UploadedFileId = uploadedFile.Id
+                    });
+                }
+            }
+
             await _context.Deliveries.AddRangeAsync(deliveries);
             await _context.Deliveries.AddRangeAsync(zeroDeliveries);
             await _context.SaveChangesAsync();
@@ -214,6 +223,7 @@ namespace Hleb.Controllers
 
             return Ok(new { message, status = true });
         }
+
 
 
 
@@ -314,7 +324,6 @@ namespace Hleb.Controllers
 
 
         [HttpPost("clear_by_document")]
-        //[CheckSession]
         public async Task<IActionResult> ClearByDocument([FromBody] Clear dto)
         {
             if (dto.fileId <= 0)
@@ -325,10 +334,9 @@ namespace Hleb.Controllers
                     status = false
                 });
             }
-             
-            var file = await _context.UploadedFiles.FirstOrDefaultAsync(x => x.Id == dto.fileId);
 
-            if(file == null)
+            var file = await _context.UploadedFiles.FirstOrDefaultAsync(x => x.Id == dto.fileId);
+            if (file == null)
             {
                 return Ok(new
                 {
@@ -337,11 +345,12 @@ namespace Hleb.Controllers
                 });
             }
 
-            var deliveries = await _context.Deliveries
+            var deliveryIds = await _context.Deliveries
                 .Where(d => d.UploadedFileId == dto.fileId)
+                .Select(d => d.Id)
                 .ToListAsync();
 
-            if (deliveries.Count == 0)
+            if (deliveryIds.Count == 0)
             {
                 return Ok(new
                 {
@@ -350,32 +359,31 @@ namespace Hleb.Controllers
                 });
             }
 
-            var deliveryIds = deliveries.Select(d => d.Id).ToList();
+            await _context.Database.ExecuteSqlRawAsync($@"
+                DELETE FROM ShipmentLogs 
+                WHERE DeliveryId IN ({string.Join(",", deliveryIds)})
+            ");
 
-            var shipmentLogs = await _context.ShipmentLogs
-                .Where(s => deliveryIds.Contains(s.DeliveryId))
-                .ToListAsync();
+            await _context.Database.ExecuteSqlRawAsync($@"
+                DELETE FROM Deliveries 
+                WHERE UploadedFileId = {dto.fileId}
+            ");
 
-            var clients = await _context.Clients
-                .ToListAsync();
-
-            _context.Clients.RemoveRange(clients);
-
-            _context.ShipmentLogs.RemoveRange(shipmentLogs);
-
-            _context.Deliveries.RemoveRange(deliveries);
             _context.UploadedFiles.Remove(file);
-
             await _context.SaveChangesAsync();
-            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
 
+            await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Clients");
+
+            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
+            
 
             return Ok(new
             {
-                message = $"Удалено {deliveries.Count} доставок и {shipmentLogs.Count} логов отгрузки по документу {dto.fileId}",
+                message = $"Удалено {deliveryIds.Count} доставок и все логи отгрузки по документу {dto.fileId}",
                 status = true
             });
         }
+
 
         [HttpPost("get_documents")]
         public async Task<IActionResult> GetUploadedFilesByDate([FromBody] GetDocument dto)
