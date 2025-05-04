@@ -67,7 +67,6 @@ namespace Hleb.Controllers
         }
 
         [HttpPost("import_excel")]
-        //[CheckSession]
         public async Task<IActionResult> ImportExcel([FromForm] ImportExcel dto)
         {
             if (dto.file == null || dto.file.Length == 0)
@@ -76,7 +75,7 @@ namespace Hleb.Controllers
             var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
 
             var deliveries = new List<Delivery>();
-            var zeroDeliveries = new List<Delivery>(); // для доставок с нулями
+            var zeroDeliveries = new List<Delivery>();
             var emptyRows = new List<int>();
             var errorRows = new List<string>();
 
@@ -88,6 +87,11 @@ namespace Hleb.Controllers
             _context.UploadedFiles.Add(uploadedFile);
             await _context.SaveChangesAsync();
 
+            // Загружаем всё нужное в память
+            var products = await _context.Products.ToDictionaryAsync(p => p.Article);
+            var clients = await _context.Clients.ToDictionaryAsync(c => c.ClientCode);
+            var routes = await _context.Routes.ToDictionaryAsync(r => r.RouteCode);
+
             using (var stream = new MemoryStream())
             {
                 await dto.file.CopyToAsync(stream);
@@ -98,10 +102,8 @@ namespace Hleb.Controllers
                 foreach (var row in rows)
                 {
                     int rowNumber = row.WorksheetRow().RowNumber();
-
                     try
                     {
-                        // Проверка на пустые ячейки
                         if (Enumerable.Range(1, 12).Any(i => string.IsNullOrWhiteSpace(row.Cell(i).GetValue<string>())))
                         {
                             emptyRows.Add(rowNumber);
@@ -114,8 +116,8 @@ namespace Hleb.Controllers
                         string unit = row.Cell(4).GetValue<string>();
                         int packingRate = int.Parse(row.Cell(5).GetValue<string>());
 
-                        var product = await _context.Products.FirstOrDefaultAsync(p => p.Article == article);
-                        if (product == null)
+                        // Product
+                        if (!products.TryGetValue(article, out var product))
                         {
                             product = new Product
                             {
@@ -126,15 +128,14 @@ namespace Hleb.Controllers
                                 PackingRate = packingRate
                             };
                             _context.Products.Add(product);
-                            await _context.SaveChangesAsync();
+                            products.Add(article, product);
                         }
 
                         string clientName = row.Cell(6).GetValue<string>();
-                        string clientCode = row.Cell(7).GetValue<string>();
-                        clientCode = string.Concat(clientCode.TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
+                        string clientCode = string.Concat(row.Cell(7).GetValue<string>().TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
 
-                        var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode);
-                        if (client == null)
+                        // Client
+                        if (!clients.TryGetValue(clientCode, out var client))
                         {
                             client = new Client
                             {
@@ -142,14 +143,14 @@ namespace Hleb.Controllers
                                 ClientCode = clientCode
                             };
                             _context.Clients.Add(client);
-                            await _context.SaveChangesAsync();
+                            clients.Add(clientCode, client);
                         }
 
                         string routeCode = row.Cell(8).GetValue<string>();
                         string routeName = row.Cell(9).GetValue<string>();
 
-                        var route = await _context.Routes.FirstOrDefaultAsync(r => r.RouteCode == routeCode);
-                        if (route == null)
+                        // Route
+                        if (!routes.TryGetValue(routeCode, out var route))
                         {
                             route = new Routes
                             {
@@ -157,54 +158,39 @@ namespace Hleb.Controllers
                                 Name = routeName
                             };
                             _context.Routes.Add(route);
-                            await _context.SaveChangesAsync();
+                            routes.Add(routeCode, route);
                         }
 
                         int quantity = int.Parse(row.Cell(10).GetValue<string>());
                         double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
                         string address = row.Cell(12).GetValue<string>();
 
-                        // Добавляем доставку с реальным количеством
-                        var delivery = new Delivery
+                        deliveries.Add(new Delivery
                         {
-                            ProductId = product.Id,
-                            ClientId = client.Id,
-                            RouteId = route.Id,
+                            Product = product,
+                            Client = client,
+                            Route = route,
                             Quantity = quantity,
                             Weight = weight,
                             DeliveryAddress = address,
                             CreateDate = selectedDate,
                             UploadedFileId = uploadedFile.Id
-                        };
-                        deliveries.Add(delivery);
+                        });
 
-                        // Добавляем доставки с количеством 0 для остальных клиентов
-                        var otherClients = await _context.Clients
-                            .Where(c => c.Id != client.Id)
-                            .ToListAsync();
-
-                        foreach (var otherClient in otherClients)
+                        // Доставки с нулём
+                        foreach (var otherClient in clients.Values.Where(c => c.Id != client.Id))
                         {
-                            bool exists = await _context.Deliveries.AnyAsync(d =>
-                                d.ClientId == otherClient.Id &&
-                                d.ProductId == product.Id &&
-                                d.CreateDate == selectedDate);
-
-                            if (!exists)
+                            zeroDeliveries.Add(new Delivery
                             {
-                                var zeroDelivery = new Delivery
-                                {
-                                    ProductId = product.Id,
-                                    ClientId = otherClient.Id,
-                                    RouteId = route.Id,
-                                    Quantity = 0,
-                                    Weight = 0,
-                                    DeliveryAddress = "-",
-                                    CreateDate = selectedDate,
-                                    UploadedFileId = uploadedFile.Id
-                                };
-                                zeroDeliveries.Add(zeroDelivery);
-                            }
+                                Product = product,
+                                Client = otherClient,
+                                Route = route,
+                                Quantity = 0,
+                                Weight = 0,
+                                DeliveryAddress = "-",
+                                CreateDate = selectedDate,
+                                UploadedFileId = uploadedFile.Id
+                            });
                         }
                     }
                     catch (Exception ex)
@@ -215,6 +201,7 @@ namespace Hleb.Controllers
                 }
             }
 
+            await _context.SaveChangesAsync(); // сохраняем все новые продукты, клиентов, маршруты
             await _context.Deliveries.AddRangeAsync(deliveries);
             await _context.Deliveries.AddRangeAsync(zeroDeliveries);
             await _context.SaveChangesAsync();
@@ -227,6 +214,7 @@ namespace Hleb.Controllers
 
             return Ok(new { message, status = true });
         }
+
 
 
         [HttpPost("build_map")]
