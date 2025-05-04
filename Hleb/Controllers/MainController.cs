@@ -67,6 +67,7 @@ namespace Hleb.Controllers
         }
 
         [HttpPost("import_excel")]
+        //[CheckSession]
         public async Task<IActionResult> ImportExcel([FromForm] ImportExcel dto)
         {
             if (dto.file == null || dto.file.Length == 0)
@@ -75,9 +76,8 @@ namespace Hleb.Controllers
             var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
 
             var deliveries = new List<Delivery>();
-            var zeroDeliveries = new List<Delivery>();
-            var emptyRows = new List<int>();
-            var errorRows = new List<string>();
+            var emptyRows = new List<int>();      // Строки с пустыми данными
+            var errorRows = new List<string>();   // Строки с исключениями
 
             var uploadedFile = new UploadedFile
             {
@@ -87,9 +87,6 @@ namespace Hleb.Controllers
             _context.UploadedFiles.Add(uploadedFile);
             await _context.SaveChangesAsync();
 
-            var products = await _context.Products.ToDictionaryAsync(p => p.Article);
-            var clients = await _context.Clients.ToDictionaryAsync(c => c.ClientCode);
-            var routes = await _context.Routes.ToDictionaryAsync(r => r.RouteCode);
 
             using (var stream = new MemoryStream())
             {
@@ -101,8 +98,10 @@ namespace Hleb.Controllers
                 foreach (var row in rows)
                 {
                     int rowNumber = row.WorksheetRow().RowNumber();
+
                     try
                     {
+                        // Проверка на пустые ячейки
                         if (Enumerable.Range(1, 12).Any(i => string.IsNullOrWhiteSpace(row.Cell(i).GetValue<string>())))
                         {
                             emptyRows.Add(rowNumber);
@@ -115,7 +114,8 @@ namespace Hleb.Controllers
                         string unit = row.Cell(4).GetValue<string>();
                         int packingRate = int.Parse(row.Cell(5).GetValue<string>());
 
-                        if (!products.TryGetValue(article, out var product))
+                        var product = await _context.Products.FirstOrDefaultAsync(p => p.Article == article);
+                        if (product == null)
                         {
                             product = new Product
                             {
@@ -126,13 +126,15 @@ namespace Hleb.Controllers
                                 PackingRate = packingRate
                             };
                             _context.Products.Add(product);
-                            products.Add(article, product);
+                            await _context.SaveChangesAsync();
                         }
 
                         string clientName = row.Cell(6).GetValue<string>();
-                        string clientCode = string.Concat(row.Cell(7).GetValue<string>().TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
+                        string clientCode = row.Cell(7).GetValue<string>();
+                        clientCode = string.Concat(clientCode.TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
 
-                        if (!clients.TryGetValue(clientCode, out var client))
+                        var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode);
+                        if (client == null)
                         {
                             client = new Client
                             {
@@ -140,13 +142,14 @@ namespace Hleb.Controllers
                                 ClientCode = clientCode
                             };
                             _context.Clients.Add(client);
-                            clients.Add(clientCode, client);
+                            await _context.SaveChangesAsync();
                         }
 
                         string routeCode = row.Cell(8).GetValue<string>();
                         string routeName = row.Cell(9).GetValue<string>();
 
-                        if (!routes.TryGetValue(routeCode, out var route))
+                        var route = await _context.Routes.FirstOrDefaultAsync(r => r.RouteCode == routeCode);
+                        if (route == null)
                         {
                             route = new Routes
                             {
@@ -154,24 +157,26 @@ namespace Hleb.Controllers
                                 Name = routeName
                             };
                             _context.Routes.Add(route);
-                            routes.Add(routeCode, route);
+                            await _context.SaveChangesAsync();
                         }
 
                         int quantity = int.Parse(row.Cell(10).GetValue<string>());
                         double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
                         string address = row.Cell(12).GetValue<string>();
 
-                        deliveries.Add(new Delivery
+                        var delivery = new Delivery
                         {
-                            Product = product,
-                            Client = client,
-                            Route = route,
+                            ProductId = product.Id,
+                            ClientId = client.Id,
+                            RouteId = route.Id,
                             Quantity = quantity,
                             Weight = weight,
                             DeliveryAddress = address,
                             CreateDate = selectedDate,
                             UploadedFileId = uploadedFile.Id
-                        });
+                        };
+
+                        deliveries.Add(delivery);
                     }
                     catch (Exception ex)
                     {
@@ -181,33 +186,7 @@ namespace Hleb.Controllers
                 }
             }
 
-            // Сохраняем справочники и основные доставки, чтобы появились Id
-            await _context.SaveChangesAsync();
-
             await _context.Deliveries.AddRangeAsync(deliveries);
-            await _context.SaveChangesAsync();
-
-            // Формируем нулевые доставки (только после того как есть Id!)
-            var allClients = clients.Values.ToList();
-            foreach (var delivery in deliveries)
-            {
-                foreach (var otherClient in allClients.Where(c => c.Id != delivery.ClientId))
-                {
-                    zeroDeliveries.Add(new Delivery
-                    {
-                        ProductId = delivery.ProductId,
-                        ClientId = otherClient.Id,
-                        RouteId = delivery.RouteId,
-                        Quantity = 0,
-                        Weight = 0,
-                        DeliveryAddress = "-",
-                        CreateDate = selectedDate,
-                        UploadedFileId = uploadedFile.Id
-                    });
-                }
-            }
-
-            await _context.Deliveries.AddRangeAsync(zeroDeliveries);
             await _context.SaveChangesAsync();
 
             string message = $"Импортировано {deliveries.Count} доставок.";
