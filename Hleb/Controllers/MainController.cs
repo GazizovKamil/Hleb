@@ -76,8 +76,9 @@ namespace Hleb.Controllers
             var selectedDate = dto.date.Date == default ? DateTime.Now : dto.date.Date;
 
             var deliveries = new List<Delivery>();
-            var emptyRows = new List<int>();      // Строки с пустыми данными
-            var errorRows = new List<string>();   // Строки с исключениями
+            var zeroDeliveries = new List<Delivery>(); // для доставок с нулями
+            var emptyRows = new List<int>();
+            var errorRows = new List<string>();
 
             var uploadedFile = new UploadedFile
             {
@@ -86,7 +87,6 @@ namespace Hleb.Controllers
             };
             _context.UploadedFiles.Add(uploadedFile);
             await _context.SaveChangesAsync();
-
 
             using (var stream = new MemoryStream())
             {
@@ -164,6 +164,7 @@ namespace Hleb.Controllers
                         double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
                         string address = row.Cell(12).GetValue<string>();
 
+                        // Добавляем доставку с реальным количеством
                         var delivery = new Delivery
                         {
                             ProductId = product.Id,
@@ -175,8 +176,36 @@ namespace Hleb.Controllers
                             CreateDate = selectedDate,
                             UploadedFileId = uploadedFile.Id
                         };
-
                         deliveries.Add(delivery);
+
+                        // Добавляем доставки с количеством 0 для остальных клиентов
+                        var otherClients = await _context.Clients
+                            .Where(c => c.Id != client.Id)
+                            .ToListAsync();
+
+                        foreach (var otherClient in otherClients)
+                        {
+                            bool exists = await _context.Deliveries.AnyAsync(d =>
+                                d.ClientId == otherClient.Id &&
+                                d.ProductId == product.Id &&
+                                d.CreateDate == selectedDate);
+
+                            if (!exists)
+                            {
+                                var zeroDelivery = new Delivery
+                                {
+                                    ProductId = product.Id,
+                                    ClientId = otherClient.Id,
+                                    RouteId = route.Id,
+                                    Quantity = 0,
+                                    Weight = 0,
+                                    DeliveryAddress = "-",
+                                    CreateDate = selectedDate,
+                                    UploadedFileId = uploadedFile.Id
+                                };
+                                zeroDeliveries.Add(zeroDelivery);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -187,6 +216,7 @@ namespace Hleb.Controllers
             }
 
             await _context.Deliveries.AddRangeAsync(deliveries);
+            await _context.Deliveries.AddRangeAsync(zeroDeliveries);
             await _context.SaveChangesAsync();
 
             string message = $"Импортировано {deliveries.Count} доставок.";
@@ -197,6 +227,7 @@ namespace Hleb.Controllers
 
             return Ok(new { message, status = true });
         }
+
 
         [HttpPost("build_map")]
         public async Task<IActionResult> BuildMap([FromBody] BuildMap dto)
