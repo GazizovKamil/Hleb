@@ -204,10 +204,10 @@ namespace Hleb.Controllers
         {
             var selectedDate = dto.date.Date == default ? DateTime.Now.Date : dto.date.Date;
 
+            // Загружаем только нужные поля из Deliveries
             var deliveriesQuery = _context.Deliveries
                 .Where(d => d.CreateDate.Date == selectedDate)
-                .Select(d => new
-                {
+                .Select(d => new {
                     d.Id,
                     d.ProductId,
                     ProductName = d.Product.Name,
@@ -234,18 +234,30 @@ namespace Hleb.Controllers
                 });
             }
 
+            // Загружаем ShipmentLogs по дате
             var shipmentLogs = await _context.ShipmentLogs
                 .Where(s => s.ShipmentDate.Date == selectedDate)
-                .Select(s => new
-                {
+                .Select(s => new {
                     s.DeliveryId,
                     s.QuantityShipped
                 })
                 .ToListAsync();
 
+            // Группируем отгрузки по DeliveryId
             var shippedDict = shipmentLogs
                 .GroupBy(s => s.DeliveryId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityShipped));
+
+            var clientIds = deliveries
+                .Select(d => d.ClientId)
+                .Distinct()
+                .ToList();
+
+            var clients = await _context.Clients
+                .Where(c => clientIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Name, c.ClientCode })
+                .OrderBy(c => c.Id)
+                .ToListAsync();
 
             // Формируем сводку по продуктам
             var pivot = deliveries
@@ -256,17 +268,18 @@ namespace Hleb.Controllers
                     var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
                     var remaining = totalQty - shipped;
 
-                    // Только клиенты по данному продукту
-                    var clientsList = g
-                        .GroupBy(d => new { d.ClientId, d.ClientName, d.ClientCode })
-                        .Select(clientGroup =>
+                    var clientsList = clients
+                        .Select(client =>
                         {
-                            var quantity = clientGroup.Sum(d => d.Quantity);
+                            var quantity = g
+                                .Where(d => d.ClientId == client.Id)
+                                .Sum(d => d.Quantity);
+
                             return new
                             {
-                                ClientId = clientGroup.Key.ClientId,
-                                Name = clientGroup.Key.ClientName,
-                                Code = clientGroup.Key.ClientCode,
+                                ClientId = client.Id,
+                                Name = client.Name,
+                                Code = client.ClientCode,
                                 Quantity = quantity
                             };
                         })
