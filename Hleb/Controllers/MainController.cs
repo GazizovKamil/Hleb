@@ -87,7 +87,6 @@ namespace Hleb.Controllers
             _context.UploadedFiles.Add(uploadedFile);
             await _context.SaveChangesAsync();
 
-            // Загружаем всё нужное в память
             var products = await _context.Products.ToDictionaryAsync(p => p.Article);
             var clients = await _context.Clients.ToDictionaryAsync(c => c.ClientCode);
             var routes = await _context.Routes.ToDictionaryAsync(r => r.RouteCode);
@@ -116,7 +115,6 @@ namespace Hleb.Controllers
                         string unit = row.Cell(4).GetValue<string>();
                         int packingRate = int.Parse(row.Cell(5).GetValue<string>());
 
-                        // Product
                         if (!products.TryGetValue(article, out var product))
                         {
                             product = new Product
@@ -134,7 +132,6 @@ namespace Hleb.Controllers
                         string clientName = row.Cell(6).GetValue<string>();
                         string clientCode = string.Concat(row.Cell(7).GetValue<string>().TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
 
-                        // Client
                         if (!clients.TryGetValue(clientCode, out var client))
                         {
                             client = new Client
@@ -149,7 +146,6 @@ namespace Hleb.Controllers
                         string routeCode = row.Cell(8).GetValue<string>();
                         string routeName = row.Cell(9).GetValue<string>();
 
-                        // Route
                         if (!routes.TryGetValue(routeCode, out var route))
                         {
                             route = new Routes
@@ -185,14 +181,14 @@ namespace Hleb.Controllers
                 }
             }
 
-            // Сохраняем справочники, чтобы получить Id
+            // Сохраняем справочники и основные доставки, чтобы появились Id
             await _context.SaveChangesAsync();
 
-            // Формируем нулевые доставки (по каждому продукту и клиенту, которых нет в deliveries)
-            var allClients = clients.Values.ToList();
-            var allProducts = products.Values.ToList();
-            var allRoutes = routes.Values.ToList();
+            await _context.Deliveries.AddRangeAsync(deliveries);
+            await _context.SaveChangesAsync();
 
+            // Формируем нулевые доставки (только после того как есть Id!)
+            var allClients = clients.Values.ToList();
             foreach (var delivery in deliveries)
             {
                 foreach (var otherClient in allClients.Where(c => c.Id != delivery.ClientId))
@@ -211,7 +207,6 @@ namespace Hleb.Controllers
                 }
             }
 
-            await _context.Deliveries.AddRangeAsync(deliveries);
             await _context.Deliveries.AddRangeAsync(zeroDeliveries);
             await _context.SaveChangesAsync();
 
@@ -223,8 +218,6 @@ namespace Hleb.Controllers
 
             return Ok(new { message, status = true });
         }
-
-
 
 
         [HttpPost("build_map")]
