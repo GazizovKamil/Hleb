@@ -294,8 +294,8 @@ namespace Hleb.Controllers
                             Name = client.Name,
                             Code = client.ClientCode,
                             TotalQuantity = quantity,
-                            RouteCode = delivery.RouteCode,
-                            Address = delivery.DeliveryAddress,
+                            RouteCode = delivery?.RouteCode,
+                            Address = delivery?.DeliveryAddress,
                         };
                     })
                     .OrderBy(t => t.ClientId)
