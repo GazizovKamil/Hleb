@@ -19,4 +19,11 @@
         public string ClientCode { get; set; }
         public int QuantityToShip { get; set; }
     }
+
+    public class BackNext
+    {
+        public int workerId { get; set; }
+        public int page { get; set; }
+        public int fileId { get; set; }
+    }
 }

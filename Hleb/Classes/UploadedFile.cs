@@ -10,8 +10,6 @@ namespace Hleb.Classes
         [Required]
         public string FileName { get; set; }
 
-        public DateTime UploadDate { get; set; } = DateTime.Now;
-
         public ICollection<Delivery> Deliveries { get; set; }
     }
 }
