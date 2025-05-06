@@ -600,11 +600,11 @@ namespace Hleb.Controllers
             var logsQuery = _context.ShipmentLogs
                 .Where(s => s.FileId == dto.fileId);
 
-            if (dto.fileId > 0)
-            {
-                logsQuery = logsQuery
-                    .Where(s => _context.Deliveries.Any(d => d.Id == s.DeliveryId && d.UploadedFileId == dto.fileId));
-            }
+            //if (dto.fileId > 0)
+            //{
+            //    logsQuery = logsQuery
+            //        .Where(s => _context.Deliveries.Any(d => d.Id == s.DeliveryId && d.UploadedFileId == dto.fileId));
+            //}
 
             var latestLogs = await logsQuery
                 .GroupBy(s => s.WorkerId)
