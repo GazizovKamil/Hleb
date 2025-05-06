@@ -651,29 +651,49 @@ namespace Hleb.Controllers
                 if (deliveries.Count == 0)
                     continue;
 
+                var allClients = await _context.Clients
+    .OrderBy(c => c.Name)  // или любой другой критерий сортировки
+    .ToListAsync();
+
                 var grouped = new List<dynamic>();
-                var deliveryGroups = deliveries.GroupBy(d => d.ClientId);
 
-                foreach (var g in deliveryGroups)
+                foreach (var client in allClients)
                 {
-                    var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == g.Key);
-                    var deliveryIds = g.Select(d => d.Id).ToList();
+                    var clientDeliveries = deliveries
+                        .Where(d => d.ClientId == client.Id)
+                        .ToList();
 
-                    var shipped = await _context.ShipmentLogs
-                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
-                        .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
-
-                    var totalQty = g.Sum(d => d.Quantity);
-                    var remaining = Math.Max(0, totalQty - shipped);
-
-                    grouped.Add(new
+                    if (clientDeliveries.Any())
                     {
-                        ClientId = g.Key,
-                        Client = client,
-                        TotalQuantity = totalQty,
-                        Shipped = shipped,
-                        Remaining = remaining
-                    });
+                        var deliveryIds = clientDeliveries.Select(d => d.Id).ToList();
+
+                        var shipped = await _context.ShipmentLogs
+                            .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
+                            .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
+
+                        var totalQty = clientDeliveries.Sum(d => d.Quantity);
+                        var remaining = Math.Max(0, totalQty - shipped);
+
+                        grouped.Add(new
+                        {
+                            ClientId = client.Id,
+                            Client = client,
+                            TotalQuantity = totalQty,
+                            Shipped = shipped,
+                            Remaining = remaining
+                        });
+                    }
+                    else
+                    {
+                        grouped.Add(new
+                        {
+                            ClientId = client.Id,
+                            Client = client,
+                            TotalQuantity = 0,
+                            Shipped = 0,
+                            Remaining = 0
+                        });
+                    }
                 }
 
                 grouped = grouped.ToList();
