@@ -444,7 +444,7 @@ namespace Hleb.Controllers
             }
 
             var deliveriesQuery = _context.Deliveries
-                .Where(d => d.ProductId == product.Id && d.CreateDate.Date == dto.date.Date);
+                .Where(d => d.ProductId == product.Id && d.UploadedFileId == dto.fileId);
 
             if (dto.fileId > 0)
             {
