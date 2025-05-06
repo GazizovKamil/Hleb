@@ -4,7 +4,6 @@
     {
         public string barcode {  get; set; }
         public int workerId { get; set; }
-        public DateTime date { get; set; }
         public int fileId { get; set; }
     }
 }
