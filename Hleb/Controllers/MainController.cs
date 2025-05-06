@@ -268,34 +268,34 @@ namespace Hleb.Controllers
                     var remaining = totalQty - shipped;
 
                     var clientsList = g
-                        .GroupBy(d => new { d.Id, d.ClientId, d.ClientName, d.ClientCode })
-                        .Select(clientGroup =>
-                        {
-                            var clientDeliveries = clientGroup
-                                .Select(d => new
-                                {
-                                    RouteCode = d.RouteCode,
-                                    Address = d.DeliveryAddress,
-                                    Quantity = d.Quantity
-                                })
-                                .ToList();
-
-                            var totalQuantity = clientDeliveries.Sum(x => x.Quantity);
-                            var firstDelivery = clientDeliveries.FirstOrDefault();
-
-                            return new
+                    .GroupBy(d => new { d.ClientId, d.ClientName, d.ClientCode })
+                    .Select(clientGroup =>
+                    {
+                        var clientDeliveries = clientGroup
+                            .Select(d => new
                             {
-                                ClientId = clientGroup.Key.ClientId,
-                                Name = clientGroup.Key.ClientName,
-                                Code = clientGroup.Key.ClientCode,
-                                TotalQuantity = totalQuantity,
-                                RouteCode = firstDelivery?.RouteCode,
-                                Address = firstDelivery?.Address,
-                                Deliveries = clientDeliveries
-                            };
-                        })
+                                RouteCode = d.RouteCode,
+                                Address = d.DeliveryAddress,
+                                Quantity = d.Quantity
+                            })
+                            .ToList();
 
-                        .ToList();
+                        var totalQuantity = clientDeliveries.Sum(x => x.Quantity);
+                        var firstDelivery = clientDeliveries.FirstOrDefault();
+
+                        return new
+                        {
+                            ClientId = clientGroup.Key.ClientId,
+                            Name = clientGroup.Key.ClientName,
+                            Code = clientGroup.Key.ClientCode,
+                            TotalQuantity = totalQuantity,
+                            RouteCode = firstDelivery?.RouteCode,
+                            Address = firstDelivery?.Address,
+                            Deliveries = clientDeliveries
+                        };
+                    })
+                    .OrderBy(t => t.ClientId)
+                    .ToList();
 
                     return new
                     {
