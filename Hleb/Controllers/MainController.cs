@@ -230,7 +230,7 @@ namespace Hleb.Controllers
             }
 
             var shipmentLogs = await _context.ShipmentLogs
-                .Where(s => s.Delivery.UploadedFileId == dto.fileId)
+                .Where(s => s.FileId == dto.fileId)
                 .Select(s => new {
                     s.DeliveryId,
                     s.QuantityShipped
@@ -418,7 +418,7 @@ namespace Hleb.Controllers
             var workerIntId = dto.workerId;
 
             var unfinished = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId && s.Barcode != dto.barcode && s.Delivery.UploadedFileId == dto.fileId)
+                .Where(s => s.WorkerId == workerIntId && s.Barcode != dto.barcode && s.FileId == dto.fileId)
                 .OrderByDescending(s => s.Id)
                 .FirstOrDefault();
 
@@ -432,7 +432,7 @@ namespace Hleb.Controllers
             }
 
             var takenByAnother = _context.ShipmentLogs
-                .FirstOrDefault(s => s.Barcode == dto.barcode && s.WorkerId != workerIntId && s.Delivery.UploadedFileId == dto.fileId);
+                .FirstOrDefault(s => s.Barcode == dto.barcode && s.WorkerId != workerIntId && s.FileId == dto.fileId);
 
             if (takenByAnother != null)
             {
@@ -468,7 +468,7 @@ namespace Hleb.Controllers
                         .Where(s => s.ClientId == client.Id
                                     && s.WorkerId == workerIntId
                                     && s.Barcode == dto.barcode
-                                    && s.Delivery.UploadedFileId == dto.fileId)
+                                    && s.FileId == dto.fileId)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = clientDeliveries.Sum(d => d.Quantity);
@@ -488,7 +488,7 @@ namespace Hleb.Controllers
 
 
             var finish = _context.ShipmentLogs
-                .Where(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.Delivery.UploadedFileId == dto.fileId)
+                .Where(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.FileId == dto.fileId)
                 .OrderByDescending(s => s.Id)
                 .FirstOrDefault();
 
@@ -524,7 +524,7 @@ namespace Hleb.Controllers
             var shipmentLog = _context.ShipmentLogs
                 .FirstOrDefault(s => s.WorkerId == workerIntId
                                      && s.Barcode == dto.barcode
-                                     && s.Delivery.UploadedFileId == dto.fileId
+                                     && s.FileId == dto.fileId
                                      && s.ClientId == currentClientId);
 
             var clientDelivery = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId);
@@ -546,6 +546,7 @@ namespace Hleb.Controllers
                         QuantityShipped = current.TotalQuantity,
                         ShipmentDate = DateTime.Now,
                         Remaining = totalRemaining,
+                        FileId = dto.fileId,
                         Notes = "Товар сканирован и отгружен",
                         DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == currentClientId)?.Id ?? 0
                     };
@@ -597,7 +598,7 @@ namespace Hleb.Controllers
         public async Task<IActionResult> GetCurrentAssignments([FromBody] GetInfo dto)
         {
             var logsQuery = _context.ShipmentLogs
-                .Where(s => s.Delivery.UploadedFileId == dto.fileId);
+                .Where(s => s.FileId == dto.fileId);
 
             if (dto.fileId > 0)
             {
@@ -612,7 +613,7 @@ namespace Hleb.Controllers
 
             // Определяем максимальное количество сборщиков
             var activeWorkerIds = await _context.ShipmentLogs
-                .Where(s => s.Delivery.UploadedFileId == dto.fileId)
+                .Where(s => s.FileId == dto.fileId)
                 .Select(s => s.WorkerId)
                 .Distinct()
                 .ToListAsync();
@@ -659,7 +660,7 @@ namespace Hleb.Controllers
                     var deliveryIds = g.Select(d => d.Id).ToList();
 
                     var shipped = await _context.ShipmentLogs
-                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.Delivery.UploadedFileId == dto.fileId)
+                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
                         .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -682,7 +683,7 @@ namespace Hleb.Controllers
 
                 var shippedClientIds = await _context.ShipmentLogs
                     .Where(s => allClientIds.Contains(s.ClientId)
-                                && s.Delivery.UploadedFileId == dto.fileId
+                                && s.FileId == dto.fileId
                                 && s.Barcode == barcode
                                 && s.WorkerId == workerId)
                     .Select(s => s.ClientId)
@@ -724,7 +725,7 @@ namespace Hleb.Controllers
                 var shipmentLog = await _context.ShipmentLogs
                     .Where(s => s.WorkerId == workerId
                                 && s.Barcode == barcode
-                                && s.Delivery.UploadedFileId == dto.fileId
+                                && s.FileId == dto.fileId
                                 && deliveryIdsForProduct.Contains(s.DeliveryId)
                                 && s.ClientId == currentClientId)
                     .OrderByDescending(s => s.ShipmentDate)
@@ -816,8 +817,7 @@ namespace Hleb.Controllers
             }
 
             var takenByAnother = await _context.ShipmentLogs
-                .Include(x => x.Delivery)
-                .FirstOrDefaultAsync(s => s.Barcode == barcode && s.WorkerId != workerIntId && s.Delivery.UploadedFileId == dto.fileId);
+                .FirstOrDefaultAsync(s => s.Barcode == barcode && s.WorkerId != workerIntId && s.FileId == dto.fileId);
 
             if (takenByAnother != null)
             {
@@ -843,11 +843,10 @@ namespace Hleb.Controllers
                         .ToList();
 
                     var shipped = _context.ShipmentLogs
-                        .Include(x => x.Delivery)
                         .Where(s => s.ClientId == client.Id
                                     && s.WorkerId == workerIntId
                                     && s.Barcode == barcode
-                                    && s.Delivery.UploadedFileId == dto.fileId)
+                                    && s.FileId == dto.fileId)
                         .Sum(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = clientDeliveries.Sum(d => d.Quantity);
@@ -867,8 +866,8 @@ namespace Hleb.Controllers
             var totalPages = fullGrouped.Count;
             var allClientIds = fullGrouped.Select(g => g.ClientId).ToList();
 
-            var shippedClientIds = _context.ShipmentLogs.Include(x => x.Delivery)
-                .Where(s => allClientIds.Contains(s.ClientId) && s.Delivery.UploadedFileId == dto.fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
+            var shippedClientIds = _context.ShipmentLogs
+                .Where(s => allClientIds.Contains(s.ClientId) && s.FileId == dto.fileId && s.Barcode == barcode && s.WorkerId == workerIntId)
                 .Select(s => s.ClientId)
                 .Distinct()
                 .ToList();
@@ -900,8 +899,8 @@ namespace Hleb.Controllers
             var totalPlanned = fullGrouped.Sum(g => g.TotalQuantity);
             var totalRemaining = fullGrouped.Sum(g => g.Remaining);
 
-            var shipmentLog = _context.ShipmentLogs.Include(x => x.Delivery)
-                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == dto.fileId && s.ClientId == current.ClientId);
+            var shipmentLog = _context.ShipmentLogs
+                .FirstOrDefault(s => s.WorkerId == workerIntId && s.Barcode == barcode && s.FileId == dto.fileId && s.ClientId == current.ClientId);
 
             if (shipmentLog != null)
             {
@@ -917,6 +916,7 @@ namespace Hleb.Controllers
                     QuantityShipped = current.TotalQuantity,
                     ShipmentDate = DateTime.Now,
                     Remaining = totalRemaining,
+                    FileId = dto.fileId,
                     Notes = "Товар сканирован и отгружен",
                     DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId)?.Id ?? 0
                 };

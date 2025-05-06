@@ -10,9 +10,8 @@ namespace Hleb.Classes
 
         [Required]
         public int DeliveryId { get; set; }
-
-        [ForeignKey("DeliveryId")]
-        public Delivery Delivery { get; set; }
+        [Required]
+        public int FileId { get; set; }
 
         [Required]
         public int QuantityShipped { get; set; }
