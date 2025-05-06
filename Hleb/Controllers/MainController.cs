@@ -527,27 +527,33 @@ namespace Hleb.Controllers
                                      && s.Delivery.UploadedFileId == dto.fileId
                                      && s.ClientId == currentClientId);
 
-            if (shipmentLog != null)
-            {
-                //shipmentLog.QuantityShipped = current.Remaining;
-                shipmentLog.ShipmentDate = DateTime.Now;
-            }
-            else
-            {
-                shipmentLog = new ShipmentLog
-                {
-                    WorkerId = workerIntId,
-                    Barcode = dto.barcode,
-                    ClientId = currentClientId,
-                    QuantityShipped = current.TotalQuantity,
-                    ShipmentDate = DateTime.Now,
-                    Remaining = totalRemaining,
-                    Notes = "Товар сканирован и отгружен",
-                    DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == currentClientId)?.Id ?? 0
-                };
+            var clientDelivery = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId);
 
-                _context.ShipmentLogs.Add(shipmentLog);
+            if (clientDelivery != null)
+            {
+                if (shipmentLog != null)
+                {
+                    //shipmentLog.QuantityShipped = current.Remaining;
+                    shipmentLog.ShipmentDate = DateTime.Now;
+                }
+                else
+                {
+                    shipmentLog = new ShipmentLog
+                    {
+                        WorkerId = workerIntId,
+                        Barcode = dto.barcode,
+                        ClientId = currentClientId,
+                        QuantityShipped = current.TotalQuantity,
+                        ShipmentDate = DateTime.Now,
+                        Remaining = totalRemaining,
+                        Notes = "Товар сканирован и отгружен",
+                        DeliveryId = deliveries.FirstOrDefault(d => d.ClientId == currentClientId)?.Id ?? 0
+                    };
+
+                    _context.ShipmentLogs.Add(shipmentLog);
+                }
             }
+                
 
             await _context.SaveChangesAsync();
 
