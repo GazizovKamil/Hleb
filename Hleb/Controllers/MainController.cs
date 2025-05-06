@@ -272,7 +272,6 @@ namespace Hleb.Controllers
                         .Select(clientGroup =>
                         {
                             var clientDeliveries = clientGroup
-                                .OrderBy(d => d.RouteCode)
                                 .Select(d => new
                                 {
                                     RouteCode = d.RouteCode,
@@ -295,8 +294,6 @@ namespace Hleb.Controllers
                                 Deliveries = clientDeliveries
                             };
                         })
-                        // сортируем по порядку из clientOrderDict
-                        .OrderBy(c => clientOrderDict.ContainsKey(c.ClientId) ? clientOrderDict[c.ClientId] : int.MaxValue)
                         .ToList();
 
                     return new
