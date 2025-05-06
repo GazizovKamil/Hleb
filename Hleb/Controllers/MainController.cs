@@ -455,22 +455,28 @@ namespace Hleb.Controllers
                 .OrderBy(d => d.ClientId)
                 .ToList();
 
-            var grouped = deliveries
-                .GroupBy(d => d.ClientId)
-                .Select(g =>
+            var clients = await _context.Clients
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+
+            var grouped = clients
+                .Select(client =>
                 {
-                    var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
+                    var clientDeliveries = deliveries.Where(d => d.ClientId == client.Id).ToList();
 
-                    var shipped = g.Sum(d => _context.ShipmentLogs
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.Delivery.UploadedFileId == dto.fileId)
-                        .Sum(s => (int?)s.QuantityShipped) ?? 0);
+                    var shipped = _context.ShipmentLogs
+                        .Where(s => s.ClientId == client.Id
+                                    && s.WorkerId == workerIntId
+                                    && s.Barcode == dto.barcode
+                                    && s.Delivery.UploadedFileId == dto.fileId)
+                        .Sum(s => (int?)s.QuantityShipped) ?? 0;
 
-                    var totalQty = g.Sum(d => d.Quantity);
+                    var totalQty = clientDeliveries.Sum(d => d.Quantity);
                     var remaining = Math.Max(0, totalQty - shipped);
 
                     return new
                     {
-                        ClientId = g.Key,
+                        ClientId = client.Id,
                         Client = client,
                         TotalQuantity = totalQty,
                         Shipped = shipped,
@@ -479,6 +485,7 @@ namespace Hleb.Controllers
                 })
                 .OrderBy(x => x.ClientId)
                 .ToList();
+
 
             var finish = _context.ShipmentLogs
                 .Where(s => s.WorkerId == workerIntId && s.Barcode == dto.barcode && s.Delivery.UploadedFileId == dto.fileId)
@@ -579,8 +586,6 @@ namespace Hleb.Controllers
                 data = send,
             });
         }
-
-
 
         [HttpPost("GetCurrentAssignments")]
         public async Task<IActionResult> GetCurrentAssignments([FromBody] GetInfo dto)
@@ -820,30 +825,37 @@ namespace Hleb.Controllers
                 .OrderBy(d => d.ClientId)
                 .ToList();
 
-            var fullGrouped = deliveries
-                .GroupBy(d => d.ClientId)
-                .Select(g =>
+            var clients = _context.Clients
+             .OrderBy(c => c.Id)
+             .ToList();
+
+            var fullGrouped = clients
+                .Select(client =>
                 {
-                    var client = _context.Clients.FirstOrDefault(c => c.Id == g.Key);
+                    var clientDeliveries = deliveries
+                        .Where(d => d.ClientId == client.Id)
+                        .ToList();
 
-                    var shipped = g.Sum(d => _context.ShipmentLogs
+                    var shipped = _context.ShipmentLogs
                         .Include(x => x.Delivery)
-                        .Where(s => s.ClientId == g.Key && s.WorkerId == workerIntId && s.Barcode == barcode && s.Delivery.UploadedFileId == dto.fileId)
-                        .Sum(s => (int?)s.QuantityShipped) ?? 0);
+                        .Where(s => s.ClientId == client.Id
+                                    && s.WorkerId == workerIntId
+                                    && s.Barcode == barcode
+                                    && s.Delivery.UploadedFileId == dto.fileId)
+                        .Sum(s => (int?)s.QuantityShipped) ?? 0;
 
-                    var totalQty = g.Sum(d => d.Quantity);
+                    var totalQty = clientDeliveries.Sum(d => d.Quantity);
                     var remaining = Math.Max(0, totalQty - shipped);
 
                     return new
                     {
-                        ClientId = g.Key,
+                        ClientId = client.Id,
                         Client = client,
                         TotalQuantity = totalQty,
                         Shipped = shipped,
-                        Remaining = remaining,
+                        Remaining = remaining
                     };
                 })
-                .OrderBy(g => g.ClientId)
                 .ToList();
 
             var totalPages = fullGrouped.Count;
