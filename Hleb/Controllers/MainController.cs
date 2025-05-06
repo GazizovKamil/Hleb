@@ -652,8 +652,8 @@ namespace Hleb.Controllers
                     continue;
 
                 var allClients = await _context.Clients
-    .OrderBy(c => c.Name)  // или любой другой критерий сортировки
-    .ToListAsync();
+                    .OrderBy(c => c.Id)  // или любой другой критерий сортировки
+                    .ToListAsync();
 
                 var grouped = new List<dynamic>();
 
