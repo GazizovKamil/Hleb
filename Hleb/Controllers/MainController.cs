@@ -536,9 +536,6 @@ namespace Hleb.Controllers
                                      && s.ClientId == currentClientId);
 
             var clientDelivery = deliveries.FirstOrDefault(d => d.ClientId == current.ClientId);
-
-            if (clientDelivery != null)
-            {
                 if (shipmentLog != null)
                 {
                     //shipmentLog.QuantityShipped = current.Remaining;
@@ -560,9 +557,7 @@ namespace Hleb.Controllers
                     };
 
                     _context.ShipmentLogs.Add(shipmentLog);
-                }
-            }
-                
+                }                
 
             await _context.SaveChangesAsync();
 
