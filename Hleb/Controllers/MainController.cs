@@ -294,6 +294,7 @@ namespace Hleb.Controllers
                                 Deliveries = clientDeliveries
                             };
                         })
+                        .OrderBy(c => c.ClientId)
                         .ToList();
 
                     return new
