@@ -267,27 +267,35 @@ namespace Hleb.Controllers
                     var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
                     var remaining = totalQty - shipped;
 
-                    var clientsList = clients
-                      .Select(client =>
-                      {
-                          var quantity = g
-                              .Where(d => d.ClientId == client.Id)
-                              .Sum(d => d.Quantity);
+                    var clientsList = g
+                        .GroupBy(d => new { d.Id, d.ClientId, d.ClientName, d.ClientCode })
+                        .Select(clientGroup =>
+                        {
+                            var clientDeliveries = clientGroup
+                                .Select(d => new
+                                {
+                                    RouteCode = d.RouteCode,
+                                    Address = d.DeliveryAddress,
+                                    Quantity = d.Quantity
+                                })
+                                .ToList();
 
-                          var delivery = g.FirstOrDefault(x => x.ClientId == client.Id);
+                            var totalQuantity = clientDeliveries.Sum(x => x.Quantity);
+                            var firstDelivery = clientDeliveries.FirstOrDefault();
 
-                          return new
-                          {
-                              ClientId = client.Id,
-                              Name = client.Name,
-                              Code = client.ClientCode,
-                              RouteCode = delivery.RouteCode,
-                              Address = delivery.DeliveryAddress,
-                              TotalQuantity = quantity
-                          };
-                      })
-                      .OrderBy(c => c.ClientId)
-                      .ToList();
+                            return new
+                            {
+                                ClientId = clientGroup.Key.ClientId,
+                                Name = clientGroup.Key.ClientName,
+                                Code = clientGroup.Key.ClientCode,
+                                TotalQuantity = totalQuantity,
+                                RouteCode = firstDelivery?.RouteCode,
+                                Address = firstDelivery?.Address,
+                                Deliveries = clientDeliveries
+                            };
+                        })
+
+                        .ToList();
 
                     return new
                     {
@@ -297,45 +305,6 @@ namespace Hleb.Controllers
                         Shipped = shipped,
                         Remaining = remaining
                     };
-
-                    //var clientsList = g
-                    //    .GroupBy(d => new { d.Id, d.ClientId, d.ClientName, d.ClientCode })
-                    //    .Select(clientGroup =>
-                    //    {
-                    //        var clientDeliveries = clientGroup
-                    //            .Select(d => new
-                    //            {
-                    //                RouteCode = d.RouteCode,
-                    //                Address = d.DeliveryAddress,
-                    //                Quantity = d.Quantity
-                    //            })
-                    //            .ToList();
-
-                    //        var totalQuantity = clientDeliveries.Sum(x => x.Quantity);
-                    //        var firstDelivery = clientDeliveries.FirstOrDefault();
-
-                    //        return new
-                    //        {
-                    //            ClientId = clientGroup.Key.ClientId,
-                    //            Name = clientGroup.Key.ClientName,
-                    //            Code = clientGroup.Key.ClientCode,
-                    //            TotalQuantity = totalQuantity,
-                    //            RouteCode = firstDelivery?.RouteCode,
-                    //            Address = firstDelivery?.Address,
-                    //            Deliveries = clientDeliveries
-                    //        };
-                    //    })
-                    //    .OrderBy(c => c.ClientId)
-                    //    .ToList();
-
-                    //return new
-                    //{
-                    //    Product = g.Key.ProductName,
-                    //    Clients = clientsList,
-                    //    Total = totalQty,
-                    //    Shipped = shipped,
-                    //    Remaining = remaining
-                    //};
                 })
                 .ToList();
 
