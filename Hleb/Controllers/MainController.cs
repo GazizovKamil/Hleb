@@ -746,7 +746,6 @@ namespace Hleb.Controllers
                     .Where(s => s.WorkerId == workerId
                                 && s.Barcode == barcode
                                 && s.FileId == dto.fileId
-                                && deliveryIdsForProduct.Contains(s.DeliveryId)
                                 && s.ClientId == currentClientId)
                     .OrderByDescending(s => s.ShipmentDate)
                     .FirstOrDefaultAsync();
