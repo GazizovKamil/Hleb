@@ -276,6 +276,7 @@ namespace Hleb.Controllers
                                 .ToList();
 
                             var totalQuantity = clientDeliveries.Sum(x => x.Quantity);
+                            var firstDelivery = clientDeliveries.FirstOrDefault();
 
                             return new
                             {
@@ -283,6 +284,8 @@ namespace Hleb.Controllers
                                 Name = clientGroup.Key.ClientName,
                                 Code = clientGroup.Key.ClientCode,
                                 TotalQuantity = totalQuantity,
+                                RouteCode = firstDelivery?.RouteCode,
+                                Address = firstDelivery?.Address,
                                 Deliveries = clientDeliveries
                             };
                         })
