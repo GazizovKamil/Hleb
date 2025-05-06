@@ -776,7 +776,7 @@ namespace Hleb.Controllers
                     page = currentIndex,
                     totalPages = grouped.Count,
                     totalPlanned = totalPlanned,
-                    totalRemaining = shipmentLog?.Remaining ?? (current.TotalQuantity - current.Shipped)
+                    totalRemaining = shipmentLog.Remaining
                 };
 
                 result.Add(send);
