@@ -205,7 +205,7 @@ namespace Hleb.Controllers
                     d.Id,
                     d.ProductId,
                     ProductName = d.Product.Name,
-                    d.ClientId,
+                    ClientId = d.Client.Id,
                     ClientName = d.Client.Name,
                     d.Client.ClientCode,
                     d.Route.RouteCode,
@@ -280,7 +280,7 @@ namespace Hleb.Controllers
 
                             return new
                             {
-                                ClientId = clientGroup.Key.Id,
+                                ClientId = clientGroup.Key.ClientId,
                                 Name = clientGroup.Key.ClientName,
                                 Code = clientGroup.Key.ClientCode,
                                 TotalQuantity = totalQuantity,
