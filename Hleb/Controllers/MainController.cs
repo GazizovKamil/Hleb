@@ -268,7 +268,6 @@ namespace Hleb.Controllers
                     var remaining = totalQty - shipped;
 
                     var clientsList = g
-                        .GroupBy(d => new { d.Id, d.ClientId, d.ClientName, d.ClientCode })
                         .Select(clientGroup =>
                         {
                             var clientDeliveries = clientGroup
