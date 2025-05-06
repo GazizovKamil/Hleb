@@ -246,11 +246,17 @@ namespace Hleb.Controllers
                 .Distinct()
                 .ToList();
 
+            // Получаем клиентов с порядком по Id
             var clients = await _context.Clients
                 .Where(c => clientIds.Contains(c.Id))
                 .Select(c => new { c.Id, c.Name, c.ClientCode })
                 .OrderBy(c => c.Id)
                 .ToListAsync();
+
+            // Делаем словарь для быстрого доступа к порядку
+            var clientOrderDict = clients
+                .Select((c, index) => new { c.Id, Index = index })
+                .ToDictionary(x => x.Id, x => x.Index);
 
             // Формируем сводку по продуктам
             var pivot = deliveries
@@ -266,7 +272,7 @@ namespace Hleb.Controllers
                         .Select(clientGroup =>
                         {
                             var clientDeliveries = clientGroup
-                                .OrderBy(d => d.RouteCode) // сортировка доставок по RouteCode
+                                .OrderBy(d => d.RouteCode)
                                 .Select(d => new
                                 {
                                     RouteCode = d.RouteCode,
@@ -289,7 +295,8 @@ namespace Hleb.Controllers
                                 Deliveries = clientDeliveries
                             };
                         })
-                        .OrderBy(c => c.ClientId)
+                        // сортируем по порядку из clientOrderDict
+                        .OrderBy(c => clientOrderDict.ContainsKey(c.ClientId) ? clientOrderDict[c.ClientId] : int.MaxValue)
                         .ToList();
 
                     return new
@@ -302,6 +309,7 @@ namespace Hleb.Controllers
                     };
                 })
                 .ToList();
+
 
             return Ok(new
             {
