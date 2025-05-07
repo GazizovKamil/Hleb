@@ -786,6 +786,7 @@ namespace Hleb.Controllers
             {
                 message = "",
                 status = true,
+                workerCount = result.Count,
                 data = result,
             });
         }
