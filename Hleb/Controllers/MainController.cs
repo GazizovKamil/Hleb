@@ -598,11 +598,11 @@ namespace Hleb.Controllers
             var logsQuery = _context.ShipmentLogs
                 .Where(s => s.FileId == dto.fileId);
 
-            //if (dto.fileId > 0)
-            //{
-            //    logsQuery = logsQuery
-            //        .Where(s => _context.Deliveries.Any(d => d.Id == s.DeliveryId && d.UploadedFileId == dto.fileId));
-            //}
+            if (dto.fileId > 0)
+            {
+                logsQuery = logsQuery
+                    .Where(s => _context.Deliveries.Any(d => d.Id == s.DeliveryId && d.UploadedFileId == dto.fileId));
+            }
 
             var latestLogs = await logsQuery
                 .GroupBy(s => s.WorkerId)
@@ -618,7 +618,7 @@ namespace Hleb.Controllers
 
             int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
 
-            if(maxWorkerCount < dto.workerCount)
+            if (maxWorkerCount < dto.workerCount)
             {
                 maxWorkerCount = dto.workerCount;
             }
@@ -649,49 +649,29 @@ namespace Hleb.Controllers
                 if (deliveries.Count == 0)
                     continue;
 
-                var allClients = await _context.Clients
-                    .OrderBy(c => c.Id)  // или любой другой критерий сортировки
-                    .ToListAsync();
-
                 var grouped = new List<dynamic>();
+                var deliveryGroups = deliveries.GroupBy(d => d.ClientId);
 
-                foreach (var client in allClients)
+                foreach (var g in deliveryGroups)
                 {
-                    var clientDeliveries = deliveries
-                        .Where(d => d.ClientId == client.Id)
-                        .ToList();
+                    var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == g.Key);
+                    var deliveryIds = g.Select(d => d.Id).ToList();
 
-                    if (clientDeliveries.Any())
+                    var shipped = await _context.ShipmentLogs
+                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
+                        .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
+
+                    var totalQty = g.Sum(d => d.Quantity);
+                    var remaining = Math.Max(0, totalQty - shipped);
+
+                    grouped.Add(new
                     {
-                        var deliveryIds = clientDeliveries.Select(d => d.Id).ToList();
-
-                        var shipped = await _context.ShipmentLogs
-                            .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
-                            .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
-
-                        var totalQty = clientDeliveries.Sum(d => d.Quantity);
-                        var remaining = Math.Max(0, totalQty - shipped);
-
-                        grouped.Add(new
-                        {
-                            ClientId = client.Id,
-                            Client = client,
-                            TotalQuantity = totalQty,
-                            Shipped = shipped,
-                            Remaining = remaining
-                        });
-                    }
-                    else
-                    {
-                        grouped.Add(new
-                        {
-                            ClientId = client.Id,
-                            Client = client,
-                            TotalQuantity = 0,
-                            Shipped = 0,
-                            Remaining = 0
-                        });
-                    }
+                        ClientId = g.Key,
+                        Client = client,
+                        TotalQuantity = totalQty,
+                        Shipped = shipped,
+                        Remaining = remaining
+                    });
                 }
 
                 grouped = grouped.ToList();
@@ -744,6 +724,7 @@ namespace Hleb.Controllers
                     .Where(s => s.WorkerId == workerId
                                 && s.Barcode == barcode
                                 && s.FileId == dto.fileId
+                                && deliveryIdsForProduct.Contains(s.DeliveryId)
                                 && s.ClientId == currentClientId)
                     .OrderByDescending(s => s.ShipmentDate)
                     .FirstOrDefaultAsync();
@@ -773,7 +754,7 @@ namespace Hleb.Controllers
                     page = currentIndex,
                     totalPages = grouped.Count,
                     totalPlanned = totalPlanned,
-                    totalRemaining = shipmentLog.Remaining
+                    totalRemaining = shipmentLog?.Remaining ?? (current.TotalQuantity - current.Shipped)
                 };
 
                 result.Add(send);
@@ -805,7 +786,6 @@ namespace Hleb.Controllers
             {
                 message = "",
                 status = true,
-                workerCount = result.Count,
                 data = result,
             });
         }
