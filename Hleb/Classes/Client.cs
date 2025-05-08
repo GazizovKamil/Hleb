@@ -10,6 +10,8 @@ namespace Hleb.Classes
         public string Name { get; set; }
 
         public string ClientCode { get; set; }
+        public string RouteCode { get; set; }
+        public string DeliveryAddress { get; set; }
 
         public ICollection<Delivery> Deliveries { get; set; }
     }

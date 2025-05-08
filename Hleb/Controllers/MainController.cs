@@ -66,16 +66,16 @@ namespace Hleb.Controllers
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
         }
+
         [HttpPost("import_excel")]
-        //[CheckSession]
         public async Task<IActionResult> ImportExcel([FromForm] ImportExcel dto)
         {
             if (dto.file == null || dto.file.Length == 0)
                 return BadRequest("Файл не выбран");
 
             var deliveries = new List<Delivery>();
-            var emptyRows = new List<int>();      // Строки с пустыми данными
-            var errorRows = new List<string>();   // Строки с исключениями
+            var emptyRows = new List<int>();
+            var errorRows = new List<string>();
 
             var uploadedFile = new UploadedFile
             {
@@ -100,7 +100,6 @@ namespace Hleb.Controllers
 
                     try
                     {
-                        // Проверка на пустые ячейки
                         if (Enumerable.Range(1, 12).Any(i => string.IsNullOrWhiteSpace(row.Cell(i).GetValue<string>())))
                         {
                             emptyRows.Add(rowNumber);
@@ -132,18 +131,6 @@ namespace Hleb.Controllers
                         string clientCode = row.Cell(7).GetValue<string>();
                         clientCode = string.Concat(clientCode.TrimStart('0').Where(c => !char.IsWhiteSpace(c)));
 
-                        var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode);
-                        if (client == null)
-                        {
-                            client = new Client
-                            {
-                                Name = clientName,
-                                ClientCode = clientCode
-                            };
-                            _context.Clients.Add(client);
-                            await _context.SaveChangesAsync();
-                        }
-
                         string routeCode = row.Cell(8).GetValue<string>();
                         string routeName = row.Cell(9).GetValue<string>();
 
@@ -162,6 +149,16 @@ namespace Hleb.Controllers
                         int quantity = int.Parse(row.Cell(10).GetValue<string>());
                         double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
                         string address = row.Cell(12).GetValue<string>();
+
+                        var client = new Client
+                        {
+                            Name = clientName,
+                            ClientCode = clientCode,
+                            RouteCode = route.RouteCode,
+                            DeliveryAddress = address
+                        };
+                        _context.Clients.Add(client);
+                        await _context.SaveChangesAsync();
 
                         var delivery = new Delivery
                         {
@@ -196,6 +193,7 @@ namespace Hleb.Controllers
             return Ok(new { message, status = true });
         }
 
+
         [HttpPost("build_map")]
         public async Task<IActionResult> BuildMap([FromBody] BuildMap dto)
         {
@@ -217,7 +215,7 @@ namespace Hleb.Controllers
             if (dto.fileId > 0)
                 deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == dto.fileId);
 
-            var deliveries = await deliveriesQuery.ToListAsync();
+            var deliveries = await deliveriesQuery.OrderBy(x => x.ClientId).ToListAsync();
 
             if (deliveries.Count == 0)
             {
@@ -246,19 +244,19 @@ namespace Hleb.Controllers
                 .Distinct()
                 .ToList();
 
-            // Получаем клиентов с порядком по Id
+            // Получаем клиентов с порядком по Id и их данными
             var clients = await _context.Clients
                 .Where(c => clientIds.Contains(c.Id))
-                .Select(c => new { c.Id, c.Name, c.ClientCode })
+                .Select(c => new { c.Id, c.Name, c.ClientCode, c.RouteCode, c.DeliveryAddress })
                 .OrderBy(c => c.Id)
                 .ToListAsync();
 
-            // Делаем словарь для быстрого доступа к порядку
-            var clientOrderDict = clients
-                .Select((c, index) => new { c.Id, Index = index })
-                .ToDictionary(x => x.Id, x => x.Index);
+            // Делаем словарь для быстрого доступа к порядку и данным
+            var clientDataDict = clients
+                .ToDictionary(x => x.Id, x => x);
 
-            // Формируем сводку по продуктам
+            var iteration = 0;
+
             var pivot = deliveries
                 .GroupBy(d => new { d.ProductId, d.ProductName })
                 .Select(g =>
@@ -267,27 +265,60 @@ namespace Hleb.Controllers
                     var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
                     var remaining = totalQty - shipped;
 
-                    var clientsList = g
-                        .Select(client =>
-                        {
-                            var clientDeliveries = g
-                                .Where(d => d.ClientId == client.Id)
-                                .ToList();
+                    List<object> clientsList;
 
-                            var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
-                            
-                            return new
+                    if (iteration == 0)
+                    {
+                        // Первая итерация — добавить всех клиентов
+                        clientsList = clients
+                            .Select(client =>
                             {
-                                ClientId = client.Id,
-                                Name = client.ClientName,
-                                Code = client.ClientCode,
-                                TotalQuantity = totalQuantity,
-                                RouteCode = client.RouteCode,
-                                DeliveryAddress = client.DeliveryAddress
-                            };
-                        })
-                        .OrderBy(t => t.ClientId)
-                        .ToList();
+                                var clientDeliveries = g.Where(d => d.ClientId == client.Id).ToList();
+                                var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
+
+                                return new
+                                {
+                                    ClientId = client.Id,
+                                    Name = client.Name,
+                                    Code = client.ClientCode,
+                                    TotalQuantity = totalQuantity,
+                                    RouteCode = client.RouteCode,
+                                    DeliveryAddress = client.DeliveryAddress
+                                };
+                            })
+                            .OrderBy(c => c.ClientId)
+                            .Cast<object>()
+                            .ToList();
+                    }
+                    else
+                    {
+                        // Со второй итерации — только те, у кого есть доставка по этому продукту
+                        clientsList = g
+                            .Select(d => new
+                            {
+                                ClientId = d.ClientId,
+                                Name = d.ClientName,
+                                Code = d.ClientCode,
+                                TotalQuantity = d.Quantity,
+                                RouteCode = d.RouteCode,
+                                DeliveryAddress = d.DeliveryAddress
+                            })
+                            .GroupBy(c => c.ClientId)
+                            .Select(cg => new
+                            {
+                                ClientId = cg.Key,
+                                Name = cg.First().Name,
+                                Code = cg.First().Code,
+                                TotalQuantity = cg.Sum(x => x.TotalQuantity),
+                                RouteCode = cg.First().RouteCode,
+                                DeliveryAddress = cg.First().DeliveryAddress
+                            })
+                            .OrderBy(c => c.ClientId)
+                            .Cast<object>()
+                            .ToList();
+                    }
+
+                    iteration++;
 
                     return new
                     {
@@ -299,6 +330,7 @@ namespace Hleb.Controllers
                     };
                 })
                 .ToList();
+
 
 
             return Ok(new
