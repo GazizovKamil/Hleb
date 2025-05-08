@@ -289,7 +289,7 @@ namespace Hleb.Controllers
                              DeliveryAddress = firstDelivery.DeliveryAddress
                          };
                      })
-                     .OrderBy(t => t.ClientId)
+                     .OrderBy(t => t.RouteCode)
                      .ToList();
 
 
