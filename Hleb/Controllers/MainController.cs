@@ -271,7 +271,7 @@ namespace Hleb.Controllers
                         .Select(client =>
                         {
                             var clientDeliveries = g
-                                .Where(d => d.ClientId == client.Id)
+                                .Where(d => d.ClientId == client.Id && d.ProductId == d.ProductId)
                                 .ToList();
 
                             var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
