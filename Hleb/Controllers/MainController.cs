@@ -283,7 +283,7 @@ namespace Hleb.Controllers
                                     Code = client.ClientCode,
                                     TotalQuantity = totalQuantity,
                                     RouteCode = client.RouteCode,
-                                    DeliveryAddress = client.DeliveryAddress
+                                    Address = client.DeliveryAddress  // <--- вот здесь поменяли
                                 };
                             })
                             .OrderBy(c => c.ClientId)
@@ -301,7 +301,7 @@ namespace Hleb.Controllers
                                 Code = d.ClientCode,
                                 TotalQuantity = d.Quantity,
                                 RouteCode = d.RouteCode,
-                                DeliveryAddress = d.DeliveryAddress
+                                Address = d.DeliveryAddress  // <--- и тут поменяли
                             })
                             .GroupBy(c => c.ClientId)
                             .Select(cg => new
@@ -311,7 +311,7 @@ namespace Hleb.Controllers
                                 Code = cg.First().Code,
                                 TotalQuantity = cg.Sum(x => x.TotalQuantity),
                                 RouteCode = cg.First().RouteCode,
-                                DeliveryAddress = cg.First().DeliveryAddress
+                                Address = cg.First().Address  // <--- и тут поменяли
                             })
                             .OrderBy(c => c.ClientId)
                             .Cast<object>()
@@ -330,8 +330,6 @@ namespace Hleb.Controllers
                     };
                 })
                 .ToList();
-
-
 
             return Ok(new
             {
