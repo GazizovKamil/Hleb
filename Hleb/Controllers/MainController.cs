@@ -275,7 +275,7 @@ namespace Hleb.Controllers
                                 .ToList();
 
                             var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
-                            var firstDelivery = clientDeliveries.First();
+                            var firstDelivery = clientDeliveries.FirstOrDefault();
 
                             return new
                             {
@@ -283,8 +283,8 @@ namespace Hleb.Controllers
                                 Name = client.Name,
                                 Code = client.ClientCode,
                                 TotalQuantity = totalQuantity,
-                                RouteCode = firstDelivery.RouteCode,
-                                DeliveryAddress = firstDelivery.DeliveryAddress
+                                RouteCode = firstDelivery?.RouteCode ?? "",
+                                DeliveryAddress = firstDelivery?.DeliveryAddress ?? ""
                             };
                         })
                         .OrderBy(t => t.ClientId)
