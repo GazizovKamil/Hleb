@@ -268,29 +268,27 @@ namespace Hleb.Controllers
                     var remaining = totalQty - shipped;
 
                     var clientsList = g
-                     .Select(d => new { d.ClientId, d.ClientName, d.ClientCode })
-                     .Distinct()
-                     .Select(client =>
-                     {
-                         var clientDeliveries = g
-                             .Where(d => d.ClientId == client.ClientId)
-                             .ToList();
+                        .Select(client =>
+                        {
+                            var clientDeliveries = g
+                                .Where(d => d.ClientId == client.ClientId)
+                                .ToList();
 
-                         var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
-                         var firstDelivery = clientDeliveries.First();
+                            var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
+                            var firstDelivery = clientDeliveries.First();
 
-                         return new
-                         {
-                             ClientId = client.ClientId,
-                             Name = client.ClientName,
-                             Code = client.ClientCode,
-                             TotalQuantity = totalQuantity,
-                             RouteCode = firstDelivery.RouteCode,
-                             DeliveryAddress = firstDelivery.DeliveryAddress
-                         };
-                     })
-                     .OrderBy(t => t.RouteCode)
-                     .ToList();
+                            return new
+                            {
+                                ClientId = client.ClientId,
+                                Name = client.ClientName,
+                                Code = client.ClientCode,
+                                TotalQuantity = totalQuantity,
+                                RouteCode = firstDelivery.RouteCode,
+                                DeliveryAddress = firstDelivery.DeliveryAddress
+                            };
+                        })
+                        .OrderBy(t => t.ClientId)
+                        .ToList();
 
 
                     return new
