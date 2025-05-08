@@ -150,14 +150,19 @@ namespace Hleb.Controllers
                         double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
                         string address = row.Cell(12).GetValue<string>();
 
-                        var client = new Client
+                        var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode && c.RouteCode == route.RouteCode);
+                        if (client == null)
                         {
-                            Name = clientName,
-                            ClientCode = clientCode,
-                            RouteCode = route.RouteCode,
-                            DeliveryAddress = address
-                        };
-                        _context.Clients.Add(client);
+                            client = new Client
+                            {
+                                Name = clientName,
+                                ClientCode = clientCode,
+                                RouteCode = route.RouteCode,
+                                DeliveryAddress = address
+                            };
+                            _context.Clients.Add(client);
+                        }
+
                         await _context.SaveChangesAsync();
 
                         var delivery = new Delivery
