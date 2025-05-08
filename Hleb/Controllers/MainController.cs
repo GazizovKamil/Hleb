@@ -267,11 +267,11 @@ namespace Hleb.Controllers
                     var shipped = g.Sum(d => shippedDict.TryGetValue(d.Id, out var qty) ? qty : 0);
                     var remaining = totalQty - shipped;
 
-                    var clientsList = g
+                    var clientsList = clients
                         .Select(client =>
                         {
                             var clientDeliveries = g
-                                .Where(d => d.ClientId == client.ClientId)
+                                .Where(d => d.ClientId == client.Id)
                                 .ToList();
 
                             var totalQuantity = clientDeliveries.Sum(d => d.Quantity);
@@ -279,8 +279,8 @@ namespace Hleb.Controllers
 
                             return new
                             {
-                                ClientId = client.ClientId,
-                                Name = client.ClientName,
+                                ClientId = client.Id,
+                                Name = client.Name,
                                 Code = client.ClientCode,
                                 TotalQuantity = totalQuantity,
                                 RouteCode = firstDelivery.RouteCode,
