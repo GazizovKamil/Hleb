@@ -642,10 +642,9 @@ namespace Hleb.Controllers
 
             int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
 
-            maxWorkerCount = dto.workerCount;
-
             if (maxWorkerCount < dto.workerCount)
             {
+                maxWorkerCount = dto.workerCount;
             }
 
             var result = new List<dynamic>();
