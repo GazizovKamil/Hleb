@@ -634,6 +634,7 @@ namespace Hleb.Controllers
 
             // Определяем максимальное количество сборщиков
             var activeWorkerIds = await _context.ShipmentLogs
+                .OrderByDescending(s => s.Id)
                 .Where(s => s.FileId == dto.fileId && s.Remaining - s.QuantityShipped > 0)
                 .Select(s => s.WorkerId)
                 .Distinct()
