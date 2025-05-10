@@ -639,13 +639,12 @@ namespace Hleb.Controllers
                 .Distinct()
                 .ToListAsync();
 
-            //int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
+            int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
 
-            int maxWorkerCount = dto.workerCount;
-            //if (maxWorkerCount < dto.workerCount)
-            //{
-            //    maxWorkerCount = dto.workerCount;
-            //}
+            if (maxWorkerCount < dto.workerCount)
+            {
+                maxWorkerCount = dto.workerCount;
+            }
 
             var result = new List<dynamic>();
 
