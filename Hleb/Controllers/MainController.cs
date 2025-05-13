@@ -378,13 +378,13 @@ namespace Hleb.Controllers
                 .Where(d => d.UploadedFileId == dto.fileId)
                 .ExecuteDeleteAsync();
 
-            // Удаляем файл
-            _context.UploadedFiles.Remove(file);
+            await _context.UploadedFiles.ExecuteDeleteAsync();
             await _context.SaveChangesAsync();
             await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
 
             // Очищаем клиентов
             await _context.Clients.ExecuteDeleteAsync();
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
