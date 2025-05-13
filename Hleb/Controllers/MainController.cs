@@ -380,10 +380,11 @@ namespace Hleb.Controllers
 
             await _context.UploadedFiles.ExecuteDeleteAsync();
             await _context.SaveChangesAsync();
-            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
 
             // Очищаем клиентов
             await _context.Clients.ExecuteDeleteAsync();
+            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
+
             await _context.SaveChangesAsync();
 
             return Ok(new
