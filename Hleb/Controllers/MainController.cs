@@ -773,7 +773,7 @@ namespace Hleb.Controllers
             }
 
             var existingWorkerIds = result.Select(r => (int)r.workerId).ToHashSet();
-            for (int workerId = 1; workerId <= maxWorkerCount; workerId++)
+            for (int workerId = 1; workerId <= dto.workerCount; workerId++)
             {
                 if (!existingWorkerIds.Contains(workerId))
                 {
