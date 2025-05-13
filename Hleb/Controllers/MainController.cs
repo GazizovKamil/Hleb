@@ -349,21 +349,13 @@ namespace Hleb.Controllers
         {
             if (dto.fileId <= 0)
             {
-                return Ok(new
-                {
-                    message = "Некорректный идентификатор документа",
-                    status = false
-                });
+                return Ok(new { message = "Некорректный идентификатор документа", status = false });
             }
 
             var file = await _context.UploadedFiles.FirstOrDefaultAsync(x => x.Id == dto.fileId);
             if (file == null)
             {
-                return Ok(new
-                {
-                    message = "Такого документа нет!",
-                    status = false
-                });
+                return Ok(new { message = "Такого документа нет!", status = false });
             }
 
             var deliveryIds = await _context.Deliveries
@@ -373,30 +365,26 @@ namespace Hleb.Controllers
 
             if (deliveryIds.Count == 0)
             {
-                return Ok(new
-                {
-                    message = "Нет доставок для удаления по этому документу",
-                    status = false
-                });
+                return Ok(new { message = "Нет доставок для удаления по этому документу", status = false });
             }
 
-            await _context.Database.ExecuteSqlRawAsync($@"
-                DELETE FROM ShipmentLogs 
-                WHERE DeliveryId IN ({string.Join(",", deliveryIds)})
-            ");
+            // Удаляем логи отгрузки
+            await _context.ShipmentLogs
+                .Where(l => deliveryIds.Contains(l.DeliveryId))
+                .ExecuteDeleteAsync();
 
-            await _context.Database.ExecuteSqlRawAsync($@"
-                DELETE FROM Deliveries 
-                WHERE UploadedFileId = {dto.fileId}
-            ");
+            // Удаляем доставки
+            await _context.Deliveries
+                .Where(d => d.UploadedFileId == dto.fileId)
+                .ExecuteDeleteAsync();
 
+            // Удаляем файл
             _context.UploadedFiles.Remove(file);
             await _context.SaveChangesAsync();
-
-            await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Clients");
-
             await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
-            
+
+            // Очищаем клиентов
+            await _context.Clients.ExecuteDeleteAsync();
 
             return Ok(new
             {
