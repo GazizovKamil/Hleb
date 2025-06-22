@@ -379,11 +379,15 @@ namespace Hleb.Controllers
                 .ExecuteDeleteAsync();
 
             await _context.UploadedFiles.ExecuteDeleteAsync();
+            await _context.Products.ExecuteDeleteAsync();
             await _context.SaveChangesAsync();
 
             await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Clients");
 
+            await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Products");
+
             await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
+            await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Products AUTO_INCREMENT = 1;");
 
             await _context.SaveChangesAsync();
 
