@@ -349,21 +349,13 @@ namespace Hleb.Controllers
         {
             if (dto.fileId <= 0)
             {
-                return Ok(new
-                {
-                    message = "Некорректный идентификатор документа",
-                    status = false
-                });
+                return Ok(new { message = "Некорректный идентификатор документа", status = false });
             }
 
             var file = await _context.UploadedFiles.FirstOrDefaultAsync(x => x.Id == dto.fileId);
             if (file == null)
             {
-                return Ok(new
-                {
-                    message = "Такого документа нет!",
-                    status = false
-                });
+                return Ok(new { message = "Такого документа нет!", status = false });
             }
 
             var deliveryIds = await _context.Deliveries
@@ -373,31 +365,27 @@ namespace Hleb.Controllers
 
             if (deliveryIds.Count == 0)
             {
-                return Ok(new
-                {
-                    message = "Нет доставок для удаления по этому документу",
-                    status = false
-                });
+                return Ok(new { message = "Нет доставок для удаления по этому документу", status = false });
             }
 
-            await _context.Database.ExecuteSqlRawAsync($@"
-                DELETE FROM ShipmentLogs 
-                WHERE DeliveryId IN ({string.Join(",", deliveryIds)})
-            ");
+            // Удаляем логи отгрузки
+            await _context.ShipmentLogs
+                .Where(l => deliveryIds.Contains(l.DeliveryId))
+                .ExecuteDeleteAsync();
 
-            await _context.Database.ExecuteSqlRawAsync($@"
-                DELETE FROM Deliveries 
-                WHERE UploadedFileId = {dto.fileId}
-            ");
+            // Удаляем доставки
+            await _context.Deliveries
+                .Where(d => d.UploadedFileId == dto.fileId)
+                .ExecuteDeleteAsync();
 
-            _context.UploadedFiles.Remove(file);
+            await _context.UploadedFiles.ExecuteDeleteAsync();
             await _context.SaveChangesAsync();
 
             await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Clients");
-            await _context.Database.ExecuteSqlRawAsync(@"DELETE FROM Products");
 
             await _context.Database.ExecuteSqlRawAsync("ALTER TABLE Clients AUTO_INCREMENT = 1;");
-            
+
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -620,7 +608,7 @@ namespace Hleb.Controllers
         public async Task<IActionResult> GetCurrentAssignments([FromBody] GetInfo dto)
         {
             var logsQuery = _context.ShipmentLogs
-                .Where(s => s.FileId == dto.fileId);
+                .Where(s => s.FileId == dto.fileId && s.WorkerId >= 1 && s.WorkerId <= dto.workerCount);
 
             if (dto.fileId > 0)
             {
@@ -633,20 +621,6 @@ namespace Hleb.Controllers
                 .Select(g => g.OrderByDescending(x => x.ShipmentDate).FirstOrDefault())
                 .ToListAsync();
 
-            // Определяем максимальное количество сборщиков
-            var activeWorkerIds = await _context.ShipmentLogs
-                .Where(s => s.FileId == dto.fileId)
-                .Select(s => s.WorkerId)
-                .Distinct()
-                .ToListAsync();
-
-            int maxWorkerCount = activeWorkerIds.Any(id => id >= 4) ? 6 : 3;
-
-            if (maxWorkerCount < dto.workerCount)
-            {
-                maxWorkerCount = dto.workerCount;
-            }
-
             var result = new List<dynamic>();
 
             foreach (var log in latestLogs)
@@ -658,18 +632,13 @@ namespace Hleb.Controllers
                 if (product == null)
                     continue;
 
-                var deliveriesQuery = _context.Deliveries
-                    .Where(d => d.ProductId == product.Id);
-
+                var deliveriesQuery = _context.Deliveries.Where(d => d.ProductId == product.Id);
                 if (dto.fileId > 0)
                 {
                     deliveriesQuery = deliveriesQuery.Where(d => d.UploadedFileId == dto.fileId);
                 }
 
-                var deliveries = await deliveriesQuery
-                    .OrderBy(d => d.ClientId)
-                    .ToListAsync();
-
+                var deliveries = await deliveriesQuery.OrderBy(d => d.ClientId).ToListAsync();
                 if (deliveries.Count == 0)
                     continue;
 
@@ -682,7 +651,10 @@ namespace Hleb.Controllers
                     var deliveryIds = g.Select(d => d.Id).ToList();
 
                     var shipped = await _context.ShipmentLogs
-                        .Where(s => deliveryIds.Contains(s.DeliveryId) && s.WorkerId == workerId && s.Barcode == barcode && s.FileId == dto.fileId)
+                        .Where(s => deliveryIds.Contains(s.DeliveryId)
+                            && s.WorkerId == workerId
+                            && s.Barcode == barcode
+                            && s.FileId == dto.fileId)
                         .SumAsync(s => (int?)s.QuantityShipped) ?? 0;
 
                     var totalQty = g.Sum(d => d.Quantity);
@@ -700,37 +672,6 @@ namespace Hleb.Controllers
 
                 grouped = grouped.ToList();
 
-                var totalRemaining = grouped.Sum(g => g.Remaining);
-                var allClientIds = grouped.Select(g => g.ClientId).ToList();
-
-                var shippedClientIds = await _context.ShipmentLogs
-                    .Where(s => allClientIds.Contains(s.ClientId)
-                                && s.FileId == dto.fileId
-                                && s.Barcode == barcode
-                                && s.WorkerId == workerId)
-                    .Select(s => s.ClientId)
-                    .Distinct()
-                    .ToListAsync();
-
-                var allClientsShipped = allClientIds.All(id => shippedClientIds.Contains(id));
-
-                if (allClientsShipped)
-                {
-                    result.Add(new
-                    {
-                        workerId = workerId,
-                        productName = "",
-                        current = new { clientName = "", clientCode = "", quantityToShip = 0 },
-                        next = new { clientName = "", clientCode = "", quantityToShip = 0 },
-                        previous = new { clientName = "", clientCode = "", quantityToShip = 0 },
-                        page = 0,
-                        totalPages = 0,
-                        totalPlanned = 0,
-                        totalRemaining = 0
-                    });
-                    continue;
-                }
-
                 var currentClientId = log.ClientId;
                 var currentIndex = grouped.FindIndex(g => g.ClientId == currentClientId);
                 if (currentIndex == -1)
@@ -741,15 +682,14 @@ namespace Hleb.Controllers
                 var previous = (currentIndex - 1 >= 0) ? grouped[currentIndex - 1] : null;
 
                 var totalPlanned = grouped.Sum(g => g.TotalQuantity);
-
                 var deliveryIdsForProduct = deliveries.Select(d => d.Id).ToList();
 
                 var shipmentLog = await _context.ShipmentLogs
                     .Where(s => s.WorkerId == workerId
-                                && s.Barcode == barcode
-                                && s.FileId == dto.fileId
-                                && deliveryIdsForProduct.Contains(s.DeliveryId)
-                                && s.ClientId == currentClientId)
+                            && s.Barcode == barcode
+                            && s.FileId == dto.fileId
+                            && deliveryIdsForProduct.Contains(s.DeliveryId)
+                            && s.ClientId == currentClientId)
                     .OrderByDescending(s => s.ShipmentDate)
                     .FirstOrDefaultAsync();
 
@@ -784,8 +724,9 @@ namespace Hleb.Controllers
                 result.Add(send);
             }
 
+            // Добавляем пустые слоты для недостающих воркеров
             var existingWorkerIds = result.Select(r => (int)r.workerId).ToHashSet();
-            for (int workerId = 1; workerId <= maxWorkerCount; workerId++)
+            for (int workerId = 1; workerId <= dto.workerCount; workerId++)
             {
                 if (!existingWorkerIds.Contains(workerId))
                 {
@@ -811,9 +752,10 @@ namespace Hleb.Controllers
                 message = "",
                 status = true,
                 workerCount = result.Count,
-                data = result,
+                data = result
             });
         }
+
 
         [HttpPost("BackNext")]
         public async Task<IActionResult> BackNext([FromBody] BackNext dto)
