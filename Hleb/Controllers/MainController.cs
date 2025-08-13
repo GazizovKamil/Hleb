@@ -147,7 +147,26 @@ namespace Hleb.Controllers
                         }
 
                         int quantity = int.Parse(row.Cell(10).GetValue<string>());
-                        double weight = double.Parse(row.Cell(11).GetValue<string>().Replace(",", "."), CultureInfo.InvariantCulture);
+
+                        string weightStr = row.Cell(11).GetValue<string>()?.Trim();
+                        double weight;
+
+                        if (string.IsNullOrEmpty(weightStr))
+                        {
+                            errorRows.Add($"Строка {rowNumber}: пустое значение веса (ячейка 11)");
+                            continue;
+                        }
+
+                        weightStr = weightStr.Replace(",", ".");
+
+                        weightStr = new string(weightStr.Where(c => char.IsDigit(c) || c == '.' || c == '-').ToArray());
+
+                        if (!double.TryParse(weightStr, NumberStyles.Any, CultureInfo.InvariantCulture, out weight))
+                        {
+                            errorRows.Add($"Строка {rowNumber}: не удалось распарсить вес '{weightStr}'");
+                            continue;
+                        }
+
                         string address = row.Cell(12).GetValue<string>();
 
                         var client = await _context.Clients.FirstOrDefaultAsync(c => c.ClientCode == clientCode && c.RouteCode == route.RouteCode);
@@ -171,7 +190,7 @@ namespace Hleb.Controllers
                             ClientId = client.Id,
                             RouteId = route.Id,
                             Quantity = quantity,
-                            Weight = weight,
+                            Weight = 0,
                             DeliveryAddress = address,
                             UploadedFileId = uploadedFile.Id
                         };
