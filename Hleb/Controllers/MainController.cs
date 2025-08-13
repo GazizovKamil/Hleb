@@ -106,7 +106,7 @@ namespace Hleb.Controllers
                             continue;
                         }
 
-                        int article = int.Parse(row.Cell(1).GetValue<string>());
+                        string article = row.Cell(1).GetValue<string>();
                         string barcode = row.Cell(2).GetValue<string>();
                         string productName = row.Cell(3).GetValue<string>();
                         string unit = row.Cell(4).GetValue<string>();

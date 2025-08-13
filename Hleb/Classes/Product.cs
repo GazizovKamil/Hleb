@@ -7,7 +7,7 @@ namespace Hleb.Classes
         [Key]
         public int Id { get; set; }
 
-        public int Article { get; set; }
+        public string Article { get; set; }
 
         public string Barcode { get; set; }
 
